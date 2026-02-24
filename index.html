@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wireframe Pengukuran Fisik</title>
+    <style>
+        /* Menggunakan Font Arial */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #ffffff;
+            padding: 20px;
+            color: #000000;
+        }
+        /* Breadcrumb */
+        
+        .breadcrumb {
+            font-size: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        /* Header Area */
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .btn-add {
+            border: 1px solid #000000;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        /* Filter Tanggal Cepat */
+        
+        .date-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .tab-box {
+            border: 1px solid #000000;
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+        /* Toolbar Filter & Search */
+        
+        .filter-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .dropdown,
+        .search-input {
+            border: 1px solid #000000;
+            padding: 5px;
+            font-size: 12px;
+            background: none;
+        }
+        
+        .btn-search {
+            border: 1px solid #000000;
+            padding: 5px 15px;
+            font-size: 12px;
+            background: none;
+        }
+        /* Action Bar */
+        
+        .action-bar {
+            border: 1px solid #000000;
+            padding: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 12px;
+        }
+        /* Tabel Data Antropometri */
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000000;
+        }
+        
+        th {
+            border: 1px solid #000000;
+            padding: 10px;
+            text-align: left;
+            font-size: 11px;
+            background-color: #ffffff;
+        }
+        
+        td {
+            border: 1px solid #000000;
+            padding: 10px;
+            font-size: 11px;
+        }
+        
+        .col-check {
+            width: 30px;
+            text-align: center;
+        }
+        
+        .btn-print {
+            border: 1px solid #000000;
+            padding: 4px 8px;
+            font-size: 10px;
+            background: none;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        
+        .footer-info {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="breadcrumb">
+        <span>Beranda</span> &gt; <span>Core</span> &gt; <span>Pengukuran Fisik</span>
+    </div>
+
+    <header>
+        <h1>Pengukuran Fisik</h1>
+        <div class="btn-add">Tambahkan pengukuran fisik</div>
+    </header>
+
+    <div class="date-tabs">
+        <div class="tab-box">&lt; 2025</div>
+        <div class="tab-box">18 Desember</div>
+    </div>
+
+    <div class="filter-toolbar">
+        <div class="dropdown">tanggalUkur ▼</div>
+        <div class="dropdown">jenisKelamin ▼</div>
+        <div class="search-input" style="width: 180px;"></div>
+        <button class="btn-search">Cari</button>
+    </div>
+
+    <div class="action-bar">
+        <div class="dropdown">--------- ▼</div>
+        <button class="btn-search">Buka</button>
+        <span>0 dari 6 dipilih</span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="col-check"><input type="checkbox"></th>
+                <th>PASIEN</th>
+                <th>TANGGALUKUR</th>
+                <th>BERAT BADAN (KG)</th>
+                <th>TINGGI/PANJANG BADAN (CM)</th>
+                <th>Z-SCORE BB/U</th>
+                <th>Z-SCORE TB/U</th>
+                <th>AKSI CETAK</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td style="text-decoration: underline;">Pasien: kevin (reinha)</td>
+                <td>18 Des. 2025</td>
+                <td>11,00</td>
+                <td>65,00</td>
+                <td>0,69</td>
+                <td>-0,87</td>
+                <td><button class="btn-print">Cetak Riwayat</button></td>
+            </tr>
+            <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td style="text-decoration: underline;">Pasien: kevin (reinha)</td>
+                <td>18 Des. 2025</td>
+                <td>12,00</td>
+                <td>80,00</td>pip
+                <td>1,03</td>
+                <td>2,39</td>
+                <td><button class="btn-print">Cetak Riwayat</button></td>
+            </tr>
+            <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td style="text-decoration: underline;">Pasien: Sela Lopes (Marsa)</td>
+                <td>18 Des. 2025</td>
+                <td>45,00</td>
+                <td>45,00</td>
+                <td>0,55</td>
+                <td>-3,00</td>
+                <td><button class="btn-print">Cetak Riwayat</button></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-info">6 pengukuran fisik</div>
+
+</body>
+
+</html>

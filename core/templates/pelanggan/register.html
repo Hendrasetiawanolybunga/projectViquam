@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - VIQUAM</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Poppins Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --viquam-dark: #0b1d28;
+            --viquam-white: #FFFFFF;
+        }
+        
+        html, body {
+            scroll-behavior: smooth;
+            height: 100%;
+        }
+        
+        body {
+            background-color: var(--viquam-white);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+        }
+        
+        .register-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .register-card {
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background-color: var(--viquam-white);
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .register-header {
+            background-color: var(--viquam-dark);
+            color: var(--viquam-white);
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .register-body {
+            padding: 30px;
+        }
+        
+        .form-control {
+            border-radius: 5px;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            background-color: var(--viquam-white);
+            color: var(--viquam-dark);
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .btn-register {
+            background-color: var(--viquam-dark);
+            color: var(--viquam-white);
+            border: 1px solid var(--viquam-dark);
+            border-radius: 5px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .btn-register:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(11, 29, 40, 0.3);
+        }
+        
+        .alert {
+            color: var(--viquam-dark);
+        }
+        
+        /* Mobile Scaling */
+        @media (max-width: 576px) {
+            .register-wrapper {
+                padding: 10px;
+            }
+            
+            .fa, i.fas, i.far, i.fal, i.fab {
+                font-size: 0.9rem;
+            }
+            
+            .register-card {
+                border-radius: 8px;
+            }
+            
+            .register-header {
+                padding: 20px 15px;
+            }
+            
+            .register-body {
+                padding: 20px 15px;
+            }
+            
+            .form-control {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .btn-register {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-wrapper">
+        <div class="register-card">
+            <div class="register-header">
+                <h3><i class="fas fa-user-plus me-2"></i>Register Akun VIQUAM</h3>
+                <p class="mb-0">Buat akun baru untuk memesan air mineral</p>
+            </div>
+            <div class="register-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post" action="/register/">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.nama.id_for_label }}" class="form-label fw-bold">Nama Lengkap</label>
+                                {{ form.nama }}
+                                {% if form.nama.errors %}
+                                    <div class="text-danger">
+                                        {{ form.nama.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.noWa.id_for_label }}" class="form-label fw-bold">Nomor WhatsApp</label>
+                                {{ form.noWa }}
+                                {% if form.noWa.errors %}
+                                    <div class="text-danger">
+                                        {{ form.noWa.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.provinsi.id_for_label }}" class="form-label fw-bold">Provinsi</label>
+                                {{ form.provinsi }}
+                                {% if form.provinsi.errors %}
+                                    <div class="text-danger">
+                                        {{ form.provinsi.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.kabupaten.id_for_label }}" class="form-label fw-bold">Kabupaten/Kota</label>
+                                {{ form.kabupaten }}
+                                {% if form.kabupaten.errors %}
+                                    <div class="text-danger">
+                                        {{ form.kabupaten.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.kecamatan.id_for_label }}" class="form-label fw-bold">Kecamatan</label>
+                                {{ form.kecamatan }}
+                                {% if form.kecamatan.errors %}
+                                    <div class="text-danger">
+                                        {{ form.kecamatan.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.idKelurahan.id_for_label }}" class="form-label fw-bold">Kelurahan/Desa</label>
+                                {{ form.idKelurahan }}
+                                {% if form.idKelurahan.errors %}
+                                    <div class="text-danger">
+                                        {{ form.idKelurahan.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.alamat.id_for_label }}" class="form-label fw-bold">Detail Alamat (Blok/No Rumah)</label>
+                                {{ form.alamat }}
+                                {% if form.alamat.errors %}
+                                    <div class="text-danger">
+                                        {{ form.alamat.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label fw-bold">Username</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger">
+                                        {{ form.username.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label fw-bold">Password</label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger">
+                                        {{ form.password.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="{{ form.confirm_password.id_for_label }}" class="form-label fw-bold">Konfirmasi Password</label>
+                                {{ form.confirm_password }}
+                                {% if form.confirm_password.errors %}
+                                    <div class="text-danger">
+                                        {{ form.confirm_password.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-register">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Sudah punya akun? <a href="/login/">Login di sini</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const provinsiSelect = document.getElementById('id_provinsi');
+            const kabupatenSelect = document.getElementById('id_kabupaten');
+            const kecamatanSelect = document.getElementById('id_kecamatan');
+            const kelurahanSelect = document.getElementById('id_idKelurahan');
+
+            // Function to populate dropdown with options
+            function populateDropdown(selectElement, options, placeholderText) {
+                // Clear existing options except placeholder
+                selectElement.innerHTML = '';
+                
+                // Add placeholder option
+                const placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = placeholderText;
+                selectElement.appendChild(placeholderOption);
+
+                // Add new options
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.idKabupaten || option.idKecamatan || option.idKelurahan;
+                    optionElement.textContent = option.nama;
+                    selectElement.appendChild(optionElement);
+                });
+            }
+
+            // Event listener for Provinsi change
+            provinsiSelect.addEventListener('change', function() {
+                const provinsiId = this.value;
+                
+                if (provinsiId) {
+                    // Fetch Kabupaten based on Provinsi
+                    fetch(`/get-kabupaten/?provinsi_id=${provinsiId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            populateDropdown(kabupatenSelect, data, 'Pilih Kabupaten/Kota...');
+                            // Reset dependent dropdowns
+                            populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
+                            populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+                        })
+                        .catch(error => console.error('Error fetching kabupaten:', error));
+                } else {
+                    // Reset all dependent dropdowns
+                    populateDropdown(kabupatenSelect, [], 'Pilih Kabupaten/Kota...');
+                    populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
+                    populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+                }
+            });
+
+            // Event listener for Kabupaten change
+            kabupatenSelect.addEventListener('change', function() {
+                const kabupatenId = this.value;
+                
+                if (kabupatenId) {
+                    // Fetch Kecamatan based on Kabupaten
+                    fetch(`/get-kecamatan/?kabupaten_id=${kabupatenId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            populateDropdown(kecamatanSelect, data, 'Pilih Kecamatan...');
+                            // Reset dependent dropdown
+                            populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+                        })
+                        .catch(error => console.error('Error fetching kecamatan:', error));
+                } else {
+                    // Reset dependent dropdowns
+                    populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
+                    populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+                }
+            });
+
+            // Event listener for Kecamatan change
+            kecamatanSelect.addEventListener('change', function() {
+                const kecamatanId = this.value;
+                
+                if (kecamatanId) {
+                    // Fetch Kelurahan based on Kecamatan
+                    fetch(`/get-kelurahan/?kecamatan_id=${kecamatanId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            populateDropdown(kelurahanSelect, data, 'Pilih Kelurahan/Desa...');
+                        })
+                        .catch(error => console.error('Error fetching kelurahan:', error));
+                } else {
+                    // Reset dependent dropdown
+                    populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

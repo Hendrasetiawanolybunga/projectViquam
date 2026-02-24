@@ -1,0 +1,221 @@
+{% extends 'pelanggan/base.html' %}
+{% load humanize %}
+
+{% block title %}Riwayat Pesanan - VIQUAM{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --viquam-dark: #0b1d28;
+    --viquam-light: #f8f9fa;
+}
+
+/* ================= CARD ================= */
+.history-card {
+    border-radius: 14px;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(11,29,40,.08);
+}
+
+/* ================= HEADER ================= */
+.section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--viquam-dark);
+}
+
+/* ================= TABLE ================= */
+.table-history {
+    font-size: .85rem;
+    min-width: 640px;
+}
+
+.table-history thead {
+    background: var(--viquam-dark);
+}
+
+.table-history thead th {
+    color: #fff;
+    font-size: .75rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: none;
+}
+
+.table-history td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* ================= STATUS BADGE ================= */
+.badge-status {
+    font-size: .7rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.bg-status-process {
+    background: #f0ad4e;
+    color: #1f1f1f;
+}
+
+.bg-status-ship {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.bg-status-done {
+    background: #198754;
+    color: #fff;
+}
+
+.bg-status-cancel {
+    background: #dc3545;
+    color: #fff;
+}
+
+/* ================= BUTTON ================= */
+.btn-action {
+    font-size: .7rem;
+    padding: 6px 10px;
+}
+
+.btn-detail {
+    background: var(--viquam-dark);
+    color: #fff;
+}
+
+.btn-detail:hover {
+    filter: brightness(1.15);
+    color: #fff;
+}
+
+/* ================= EMPTY STATE ================= */
+.empty-box {
+    background: var(--viquam-dark);
+    color: #fff;
+    border-radius: 14px;
+    padding: 32px;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 576px) {
+    .section-title {
+        font-size: .95rem;
+    }
+
+    .table-history {
+        font-size: .8rem;
+    }
+}
+</style>
+
+<!-- HEADER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-semibold">
+            <i class="fas fa-history me-2"></i>Riwayat Pesanan
+        </h5>
+    </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+    {{ message }}
+    <button class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if pesanan_list %}
+<div class="row">
+    <div class="col-12">
+        <div class="history-card p-3">
+
+            <div class="mb-3 section-title">
+                <i class="fas fa-receipt me-2"></i>Daftar Pesanan
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-history mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tanggal</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pesanan in pesanan_list %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ pesanan.tanggalPemesanan|date:"d M Y H:i" }}</td>
+                            <td class="fw-semibold">
+                                Rp {{ pesanan.total|intcomma }}
+                            </td>
+                            <td>
+                                {% if pesanan.status == 'Diproses' %}
+                                    <span class="badge badge-status bg-status-process">
+                                        {{ pesanan.status }}
+                                    </span>
+                                {% elif pesanan.status == 'Dikirim' %}
+                                    <span class="badge badge-status bg-status-ship">
+                                        {{ pesanan.status }}
+                                    </span>
+                                {% elif pesanan.status == 'Selesai' %}
+                                    <span class="badge badge-status bg-status-done">
+                                        {{ pesanan.status }}
+                                    </span>
+                                {% elif pesanan.status == 'Dibatalkan' %}
+                                    <span class="badge badge-status bg-status-cancel">
+                                        {{ pesanan.status }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-status bg-secondary">
+                                        {{ pesanan.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/riwayat/{{ pesanan.idPemesanan }}/detail/"
+                                   class="btn btn-detail btn-action">
+                                    <i class="fas fa-eye me-1"></i>Detail
+                                </a>
+
+                                {% if pesanan.status == 'Diproses' %}
+                                <a href="/riwayat/{{ pesanan.idPemesanan }}/batal/"
+                                   class="btn btn-danger btn-action ms-1"
+                                   onclick="return confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="empty-box text-center">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <p class="mb-3">Anda belum memiliki riwayat pesanan</p>
+            <a href="/produk/" class="btn btn-light btn-sm">
+                <i class="fas fa-box-open me-2"></i>Mulai Belanja
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

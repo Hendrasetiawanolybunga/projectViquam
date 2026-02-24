@@ -1,0 +1,253 @@
+{% extends 'pelanggan/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ produk.namaProduk }} - VIQUAM{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --viquam-dark: #0b1d28;
+    --viquam-white: #ffffff;
+}
+
+/* ================= GLOBAL ================= */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ================= CARD BASE ================= */
+.detail-card {
+    border-radius: 16px;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(11,29,40,.08);
+}
+
+/* ================= IMAGE ================= */
+.product-image-box {
+    aspect-ratio: 1 / 1;
+    background: #f6f7f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    border-radius: 14px;
+}
+
+.product-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ================= INFO ================= */
+.product-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--viquam-dark);
+}
+
+.product-desc {
+    font-size: .9rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+/* ================= INFO GRID ================= */
+.info-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 14px;
+    height: 100%;
+}
+
+.info-label {
+    font-size: .75rem;
+    color: #777;
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--viquam-dark);
+}
+
+/* Stock badge */
+.stock-badge {
+    display: inline-block;
+    background: rgba(11,29,40,.08);
+    color: var(--viquam-dark);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+/* ================= FORM ================= */
+.qty-input {
+    height: 44px;
+    text-align: center;
+}
+
+.btn-cart {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+    border: none;
+    height: 44px;
+    font-weight: 600;
+}
+
+.btn-cart:hover {
+    filter: brightness(1.15);
+}
+
+/* Text control */
+.btn-text-mobile {
+    display: none;
+}
+
+/* Back button */
+.btn-back {
+    border: 1px solid var(--viquam-dark);
+    color: var(--viquam-dark);
+}
+
+.btn-back:hover {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 576px) {
+    .product-title {
+        font-size: 1.2rem;
+    }
+
+    .product-desc {
+        font-size: .85rem;
+    }
+
+    .qty-input,
+    .btn-cart {
+        height: 40px;
+        font-size: .85rem;
+    }
+
+    /* Ganti teks tombol */
+    .btn-text-full {
+        display: none;
+    }
+
+    .btn-text-mobile {
+        display: inline;
+    }
+}
+</style>
+
+<!-- HEADER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-semibold">
+            <i class="fas fa-info-circle me-2"></i>Detail Produk
+        </h5>
+    </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+    {{ message }}
+    <button class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="row g-4">
+    <!-- IMAGE SECTION -->
+    <div class="col-12 col-md-6">
+        <div class="detail-card p-3">
+            <div class="product-image-box">
+                {% if produk.foto %}
+                <img src="{{ produk.foto.url }}"
+                     alt="{{ produk.namaProduk }}"
+                     onerror="this.src='https://placehold.co/608x608?text={{ produk.namaProduk|urlencode }}';">
+                {% else %}
+                <img src="https://placehold.co/608x608?text={{ produk.namaProduk|urlencode }}">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="col-12 col-md-6">
+        <div class="detail-card p-4 h-100 d-flex flex-column">
+
+            <div class="mb-3">
+                <div class="product-title">{{ produk.namaProduk }}</div>
+            </div>
+
+            {% if produk.deskripsi %}
+            <div class="product-desc mb-4">
+                {{ produk.deskripsi }}
+            </div>
+            {% endif %}
+
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <div class="info-box">
+                        <div class="info-label">Harga per {{ produk.satuan|lower }}</div>
+                        <div class="info-value">
+                            Rp {{ produk.hargaPerDus|intcomma }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="info-box d-flex flex-column justify-content-center">
+                        <div class="info-label">Stok tersedia</div>
+                        <div class="stock-badge">
+                            {{ produk.stok }} {{ produk.satuan|lower }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM -->
+            <form method="post" action="/keranjang/add/{{ produk.idProduk }}/" class="mt-auto">
+                {% csrf_token %}
+                <div class="row g-2">
+                    <div class="col-4">
+                        <input type="number"
+                               class="form-control qty-input"
+                               name="quantity"
+                               value="1"
+                               min="1"
+                               max="{{ produk.stok }}"
+                               required>
+                    </div>
+                    <div class="col-8">
+                        <button type="submit" class="btn btn-cart w-100">
+                            <i class="fas fa-cart-plus me-1"></i>
+                            <span class="btn-text-full">Tambah ke Keranjang</span>
+                            <span class="btn-text-mobile">Tambah</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- BACK -->
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="/produk/" class="btn btn-back">
+            <i class="fas fa-arrow-left me-2"></i>Kembali ke Katalog
+        </a>
+    </div>
+</div>
+
+{% endblock %}

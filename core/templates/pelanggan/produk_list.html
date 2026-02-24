@@ -1,0 +1,238 @@
+{% extends 'pelanggan/base.html' %}
+{% load humanize %}
+
+{% block title %}Daftar Produk - VIQUAM{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --viquam-dark: #0b1d28;
+    --viquam-white: #ffffff;
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ================= CARD ================= */
+.product-card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    transition: all .3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 32px rgba(11,29,40,.18);
+}
+
+/* ================= IMAGE ================= */
+.product-image-wrapper {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: #f6f7f8;
+}
+
+.product-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ===== Gradient overlay (dipertahankan) ===== */
+.product-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(11,29,40,.75) 0%,
+        rgba(11,29,40,.35) 40%,
+        transparent 70%
+    );
+    display: flex;
+    align-items: flex-end;
+    padding: 14px;
+}
+
+/* ================= TEXT OVER IMAGE ================= */
+.product-overlay-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.overlay-label {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(11,29,40,.65);
+    color: var(--viquam-white);
+    backdrop-filter: blur(4px);
+    max-width: 100%;
+}
+
+.product-name {
+    font-size: .95rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.product-price {
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+/* Stock highlight */
+.product-stock {
+    font-size: .7rem;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+}
+
+/* ================= ACTION ================= */
+.product-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+    background: #fff;
+}
+
+/* Button & input base */
+.product-actions .btn,
+.product-actions input {
+    height: 40px;
+    font-size: .8rem;
+}
+
+/* Center icon X & Y */
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Detail */
+.btn-detail {
+    border: 1px solid var(--viquam-dark);
+    color: var(--viquam-dark);
+    background: transparent;
+}
+
+.btn-detail:hover {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+}
+
+/* Qty */
+.qty-input {
+    text-align: center;
+}
+
+/* Cart */
+.btn-cart {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+    border: none;
+}
+
+.btn-cart:hover {
+    filter: brightness(1.15);
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 576px) {
+    .product-name {
+        font-size: .85rem;
+    }
+
+    .product-price {
+        font-size: .8rem;
+    }
+
+    .product-actions .btn,
+    .product-actions input {
+        height: 36px;
+        font-size: .75rem;
+    }
+}
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-semibold">
+            <i class="fas fa-box-open me-2"></i>Daftar Produk
+        </h5>
+    </div>
+</div>
+
+{% if produk_list %}
+<div class="row g-4">
+    {% for produk in produk_list %}
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="card product-card h-100">
+
+            <!-- IMAGE -->
+            <div class="product-image-wrapper">
+                {% if produk.foto %}
+                <img src="{{ produk.foto.url }}"
+                     alt="{{ produk.namaProduk }}"
+                     onerror="this.src='https://placehold.co/608x608?text={{ produk.namaProduk|urlencode }}';">
+                {% else %}
+                <img src="https://placehold.co/608x608?text={{ produk.namaProduk|urlencode }}">
+                {% endif %}
+
+                <!-- OVERLAY -->
+                <div class="product-overlay">
+                    <div class="product-overlay-content">
+                        <div class="overlay-label product-name">
+                            {{ produk.namaProduk }}
+                        </div>
+                        <div class="overlay-label product-price">
+                            Rp {{ produk.hargaPerDus|intcomma }}
+                        </div>
+                        <div class="overlay-label product-stock">
+                            Stok {{ produk.stok }} {{ produk.satuan|lower }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION -->
+            <div class="product-actions">
+                <a href="/produk/{{ produk.idProduk }}/detail/"
+                   class="btn btn-sm btn-detail btn-icon"
+                   title="Detail">
+                    <i class="fas fa-info-circle"></i>
+                </a>
+
+                <input type="number"
+                       class="form-control form-control-sm qty-input"
+                       value="1"
+                       min="1"
+                       max="{{ produk.stok }}">
+
+                <form method="post" action="/keranjang/add/{{ produk.idProduk }}/">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <button class="btn btn-sm btn-cart btn-icon w-100">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    Tidak ada produk tersedia.
+</div>
+{% endif %}
+
+{% endblock %}

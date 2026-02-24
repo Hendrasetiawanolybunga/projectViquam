@@ -1,0 +1,225 @@
+{% extends 'pelanggan/base.html' %}
+{% load humanize %}
+
+{% block title %}Detail Pesanan #{{ pesanan.idPemesanan }} - VIQUAM{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --viquam-dark: #0b1d28;
+}
+
+/* ================= CARD ================= */
+.order-card {
+    border-radius: 14px;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(11,29,40,.08);
+}
+
+/* ================= HEADER ================= */
+.section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--viquam-dark);
+}
+
+/* ================= TABLE ================= */
+.table-order {
+    font-size: .85rem;
+    min-width: 520px;
+}
+
+.table-order th {
+    font-size: .75rem;
+    text-transform: uppercase;
+    color: #666;
+    white-space: nowrap;
+}
+
+.table-order td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* ================= INFO ================= */
+.info-label {
+    font-size: .7rem;
+    color: #777;
+}
+
+.info-value {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--viquam-dark);
+}
+
+.badge-status {
+    font-size: .7rem;
+    padding: 6px 10px;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 576px) {
+    .section-title {
+        font-size: .95rem;
+    }
+
+    .table-order {
+        font-size: .8rem;
+    }
+
+    .info-value {
+        font-size: .8rem;
+    }
+}
+</style>
+
+<!-- HEADER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-semibold">
+            <i class="fas fa-receipt me-2"></i>
+            Detail Pesanan #{{ order_number }}
+        </h5>
+    </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+    {{ message }}
+    <button class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="row g-4">
+
+    <!-- DETAIL PRODUK -->
+    <div class="col-12 col-lg-8">
+        <div class="order-card p-3">
+            <div class="mb-3 section-title">
+                <i class="fas fa-box me-2"></i>Produk Dipesan
+            </div>
+
+            {% if detail_list %}
+            <div class="table-responsive">
+                <table class="table table-striped table-order mb-0">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th>Jumlah</th>
+                            <th>Harga</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in detail_list %}
+                        <tr>
+                            <td>{{ detail.idProduk.namaProduk }}</td>
+                            <td>{{ detail.jumlah }} {{ detail.idProduk.satuan|lower }}</td>
+                            <td>Rp {{ detail.idProduk.hargaPerDus|intcomma }}</td>
+                            <td class="fw-semibold">
+                                Rp {{ detail.subTotal|intcomma }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Tidak ada detail produk.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- INFO PESANAN -->
+    <div class="col-12 col-lg-4">
+        <div class="order-card p-3 h-100">
+
+            <div class="mb-3 section-title">
+                <i class="fas fa-info-circle me-2"></i>Informasi Pesanan
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">No. Pesanan</div>
+                <div class="info-value">{{ order_number }}</div>
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Tanggal</div>
+                <div class="info-value">
+                    {{ pesanan.tanggalPemesanan|date:"d M Y H:i" }}
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Total Pembayaran</div>
+                <div class="info-value text-success">
+                    Rp {{ pesanan.total|intcomma }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="info-label">Status</div>
+                {% if pesanan.status == 'Diproses' %}
+                    <span class="badge bg-warning text-dark badge-status">{{ pesanan.status }}</span>
+                {% elif pesanan.status == 'Dikirim' %}
+                    <span class="badge bg-primary badge-status">{{ pesanan.status }}</span>
+                {% elif pesanan.status == 'Selesai' %}
+                    <span class="badge bg-success badge-status">{{ pesanan.status }}</span>
+                {% elif pesanan.status == 'Dibatalkan' %}
+                    <span class="badge bg-danger badge-status">{{ pesanan.status }}</span>
+                {% else %}
+                    <span class="badge bg-secondary badge-status">{{ pesanan.status }}</span>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+                <div class="info-label">Alamat Pengiriman</div>
+                <div class="info-value text-muted">
+                    {{ pesanan.alamatPengiriman }}
+                </div>
+            </div>
+
+            {% if pesanan.idSopir %}
+            <hr>
+            <div class="mb-2">
+                <div class="info-label">Driver</div>
+                <div class="info-value">{{ pesanan.idSopir.nama }}</div>
+            </div>
+            <div class="mb-2">
+                <div class="info-label">Kontak Driver</div>
+                <div class="info-value">{{ pesanan.idSopir.noHp }}</div>
+            </div>
+            {% endif %}
+
+            {% if pesanan.buktiBayar %}
+            <hr>
+            <div class="info-label mb-2">Bukti Pembayaran</div>
+            <a href="{{ pesanan.buktiBayar.url }}" target="_blank">
+                <img src="{{ pesanan.buktiBayar.url }}"
+                     class="img-fluid rounded"
+                     style="max-height:180px;">
+            </a>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+<!-- BACK -->
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="/riwayat/" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-2"></i>Kembali ke Riwayat
+        </a>
+    </div>
+</div>
+
+{% endblock %}

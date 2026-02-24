@@ -1,0 +1,348 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load i18n %}
+
+{% block title %}{% trans 'Dashboard' %}{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* --- Root & Global Styles --- */
+        :root {
+            --radius-lg: 15px;
+            --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* --- Improved Cards Style --- */
+        .card {
+            border: none !important;
+            border-radius: var(--radius-lg) !important;
+            transition: var(--transition);
+        }
+
+        .card.shadow-lg {
+            box-shadow: var(--shadow-soft) !important;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        /* --- Gradients --- */
+        .grad-danger  { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); }
+        .grad-warning { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); }
+        .grad-info    { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
+        .grad-dark    { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); }
+        .grad-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+
+        /* --- Fix Text Layout Inside Cards --- */
+        .card-stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-bottom: 0;
+            line-height: 1.2;
+            flex: 1;
+        }
+
+        .stat-icon {
+            font-size: 1.4rem;
+            opacity: 0.8;
+            margin-left: 10px;
+        }
+
+        .stat-value {
+            font-weight: 800;
+            font-size: 2.2rem;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .stat-desc {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        /* Currency Text Fix */
+        .currency-wrap {
+            white-space: nowrap; /* Mencegah Rp terpisah dari angka */
+            display: inline-block;
+        }
+
+        /* --- List Group Fix --- */
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 15px 20px;
+        }
+
+        /* --- Responsive Tweaks --- */
+        @media (max-width: 768px) {
+            .stat-value { font-size: 1.8rem; }
+            .dashboard-header h1 { font-size: 1.5rem; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row dashboard-header align-items-center">
+            <div class="col-sm-6">
+                <h1 class="mb-0">Dashboard Monitoring</h1>
+            </div>
+            <div class="col-sm-6 text-sm-right mt-2 mt-sm-0">
+                <p class="logo mb-0 text-white-50 small">Welcome,</p>
+                <h5 class="mb-0">{{ user.username }}</h5>
+            </div>
+        </div>
+
+        {% if user.is_superuser or is_pimpinan %}
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <a href="{% url 'admin:core_pemesanan_changelist' %}?status__exact=Diproses&tanggalPemesanan__lte={{ twenty_four_hours_ago }}" class="text-decoration-none">
+                    <div class="card grad-danger text-white h-100 shadow-lg">
+                        <div class="card-body">
+                            <div class="card-stat-header">
+                                <h5 class="card-title">Pesanan Perlu Perhatian</h5>
+                                <i class="fas fa-exclamation-circle stat-icon"></i>
+                            </div>
+                            <h2 class="stat-value">{{ pesanan_perlu_perhatian|intcomma }}</h2>
+                            <p class="stat-desc mb-0">Pesanan > 24 Jam</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <a href="{% url 'admin:core_pemesanan_changelist' %}?status__exact=Diproses" class="text-decoration-none">
+                    <div class="card grad-warning text-white h-100 shadow-lg">
+                        <div class="card-body">
+                            <div class="card-stat-header">
+                                <h5 class="card-title">Total Pesanan Diproses</h5>
+                                <i class="fas fa-box stat-icon"></i>
+                            </div>
+                            <h2 class="stat-value">{{ total_pesanan_diproses|intcomma }}</h2>
+                            <p class="stat-desc mb-0">Menunggu Pengiriman</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <a href="{% url 'admin:core_pemesanan_changelist' %}?status__exact=Dikirim" class="text-decoration-none">
+                    <div class="card grad-info text-white h-100 shadow-lg">
+                        <div class="card-body">
+                            <div class="card-stat-header">
+                                <h5 class="card-title">Total Pengiriman Aktif</h5>
+                                <i class="fas fa-truck stat-icon"></i>
+                            </div>
+                            <h2 class="stat-value">{{ total_pengiriman_aktif|intcomma }}</h2>
+                            <p class="stat-desc mb-0">Dalam Perjalanan</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <a href="{% url 'admin:core_produk_changelist' %}?stok=0" class="text-decoration-none">
+                    <div class="card grad-dark text-white h-100 shadow-lg">
+                        <div class="card-body">
+                            <div class="card-stat-header">
+                                <h5 class="card-title">Produk Stok Habis</h5>
+                                <i class="fas fa-exclamation-triangle stat-icon"></i>
+                            </div>
+                            <h2 class="stat-value">{{ produk_stok_habis|intcomma }}</h2>
+                            <p class="stat-desc mb-0">Stok = 0</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-lg h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 font-weight-bold">Tren Pendapatan 6 Bulan Terakhir</h5>
+                    </div>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card grad-success text-white mb-4 shadow-lg">
+                    <div class="card-body py-4">
+                        <div class="card-stat-header">
+                            <h5 class="card-title">Total Pendapatan (Keseluruhan)</h5>
+                            <i class="fas fa-money-bill-wave stat-icon"></i>
+                        </div>
+                        <h3 class="stat-value mb-2">
+                            <span class="currency-wrap">Rp {{ total_pendapatan_keseluruhan|floatformat:0|intcomma }}</span>
+                        </h3>
+                        <p class="stat-desc mb-0 font-italic">
+                            <i class="fas fa-check-circle mr-1"></i>{{ transaksi_selesai_keseluruhan }} transaksi selesai
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-lg-12 mb-4">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 font-weight-bold">Penjualan Per Produk</h5>
+                    </div>
+                    <div class="card-body" style="height: 400px;">
+                        <canvas id="productSalesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-lg h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 font-weight-bold">Feedback Pelanggan Terbaru</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for feedback in feedback_terbaru %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div style="flex: 1;">
+                                        <div class="font-weight-bold text-dark">{{ feedback.idPelanggan.nama }}</div>
+                                        <p class="text-muted small mb-0">{{ feedback.isi|truncatechars:100 }}</p>
+                                    </div>
+                                    <span class="badge badge-light border text-muted ml-2">{{ feedback.tanggal|date:"d M" }}</span>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item text-center text-muted">Tidak ada feedback saat ini.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 text-center">
+                        {% if user.is_superuser %}
+                        <a href="{% url 'admin:core_feedback_changelist' %}" class="btn btn-sm btn-outline-primary px-4">Lihat Semua Feedback</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-lg h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 font-weight-bold"><i class="fas fa-external-link-alt mr-2"></i>Akses Cepat ke Laporan</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if user.is_superuser %}
+                            <div class="col-6 mb-3"><a href="{% url 'admin:core_pelanggan_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-users mr-2 text-primary"></i>Pelanggan</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'admin:core_produk_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-box-open mr-2 text-success"></i>Produk</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'admin:core_sopir_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-user-tie mr-2 text-info"></i>Sopir</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'admin:core_feedback_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-comment-dots mr-2 text-warning"></i>Feedback</a></div>
+                            {% endif %}
+                            <div class="col-6 mb-3"><a href="{% url 'custom_admin:core_pemesanan_laporan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-file-invoice-dollar mr-2 text-danger"></i>Lap. Pendapatan</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'custom_admin:core_pemesanan_laporan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-chart-line mr-2 text-dark"></i>Lap. Pemesanan</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const parseChartData = (rawData, name) => {
+                let parsed = rawData;
+                if (typeof rawData === 'string') {
+                    try { parsed = JSON.parse(rawData); } catch (e) { return []; }
+                }
+                return Array.isArray(parsed) ? parsed : [];
+            };
+
+            // Revenue Chart
+            let labelsData = parseChartData({{ chart_labels_json|safe }}, 'Labels');
+            let valuesData = parseChartData({{ chart_data_json|safe }}, 'Values');
+
+            if (labelsData.length > 0) {
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labelsData,
+                        datasets: [{
+                            label: 'Pendapatan',
+                            data: valuesData,
+                            borderColor: '#2193b0',
+                            backgroundColor: 'rgba(33, 147, 176, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { ticks: { callback: v => 'Rp ' + v.toLocaleString() } }
+                        }
+                    }
+                });
+            }
+
+            // Product Sales Chart
+            let productLabels = parseChartData({{ product_labels_json|safe }}, 'ProdLabels');
+            let productValues = parseChartData({{ product_sales_data_json|safe }}, 'ProdValues');
+
+            if (productLabels.length > 0) {
+                const ctx2 = document.getElementById('productSalesChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: productLabels,
+                        datasets: [{
+                            data: productValues,
+                            backgroundColor: '#6dd5ed',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

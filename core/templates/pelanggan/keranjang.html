@@ -1,0 +1,277 @@
+{% extends 'pelanggan/base.html' %}
+{% load humanize %}
+
+{% block title %}Keranjang Belanja - VIQUAM{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --viquam-dark: #0b1d28;
+    --viquam-white: #ffffff;
+}
+
+/* SMOOTH SCROLL */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ================= CARD ================= */
+.cart-card {
+    border-radius: 16px;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(11,29,40,.08);
+}
+
+/* ================= TABLE ================= */
+.cart-table thead th {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+}
+
+.cart-table td {
+    font-size: .8rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* PRODUCT NAME */
+.cart-product {
+    font-weight: 600;
+    color: var(--viquam-dark);
+}
+
+/* INPUT */
+.quantity-input {
+    text-align: center;
+    font-size: .75rem;
+    height: 34px;
+}
+
+/* SAVING */
+.saving-indicator {
+    font-size: .7rem;
+    padding: 2px 6px;
+}
+
+/* SUBTOTAL */
+.item-subtotal {
+    font-weight: 600;
+}
+
+/* ================= BADGE ================= */
+.badge-info {
+    background: rgba(11,29,40,.08);
+    color: var(--viquam-dark);
+    font-size: .7rem;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+/* ================= BUTTON ================= */
+.btn-dark-main {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+    border: none;
+}
+
+.btn-dark-main:hover {
+    filter: brightness(1.15);
+}
+
+.btn-outline-dark-main {
+    border: 1px solid var(--viquam-dark);
+    color: var(--viquam-dark);
+}
+
+.btn-outline-dark-main:hover {
+    background: var(--viquam-dark);
+    color: var(--viquam-white);
+}
+
+.btn-sm {
+    font-size: .75rem;
+    padding: 6px 10px;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 576px) {
+    .cart-table {
+        font-size: .72rem;
+    }
+
+    .cart-table th,
+    .cart-table td {
+        padding: 6px;
+    }
+
+    .quantity-input {
+        height: 30px;
+        font-size: .7rem;
+    }
+
+    .btn-sm {
+        font-size: .7rem;
+        padding: 5px 8px;
+    }
+}
+</style>
+
+<!-- HEADER -->
+<div class="row mb-3">
+    <div class="col-12">
+        <h5 class="fw-semibold">
+            <i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja
+        </h5>
+    </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+    {{ message }}
+    <button class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if cart_items %}
+<div class="row">
+    <div class="col-12">
+        <div class="cart-card p-3">
+
+            <div class="table-responsive">
+                <table class="table cart-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th>Harga</th>
+                            <th>Jumlah</th>
+                            <th>Subtotal</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart_items %}
+                        <tr>
+                            <td class="cart-product">{{ item.nama }}</td>
+                            <td>Rp {{ item.harga|intcomma }}</td>
+                            <td>
+                                <form method="post"
+                                      action="/keranjang/update/{{ item.id }}/"
+                                      id="update-form-{{ item.id }}">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm">
+                                        <input type="number"
+                                               class="form-control quantity-input"
+                                               name="quantity"
+                                               value="{{ item.quantity }}"
+                                               min="1"
+                                               max="{{ item.stok }}"
+                                               data-price="{{ item.harga }}"
+                                               data-item-id="{{ item.id }}">
+                                        <span class="input-group-text saving-indicator"
+                                              id="saving-{{ item.id }}"
+                                              style="display:none;">
+                                            Menyimpan
+                                        </span>
+                                    </div>
+                                    <div class="badge-info mt-1">
+                                        {{ item.satuan }}
+                                    </div>
+                                </form>
+                            </td>
+                            <td class="item-subtotal" id="subtotal-{{ item.id }}">
+                                Rp {{ item.subtotal|intcomma }}
+                            </td>
+                            <td class="text-center">
+                                <a href="/keranjang/remove/{{ item.id }}/"
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Hapus {{ item.nama }} dari keranjang?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Total</th>
+                            <th id="cart-total">Rp {{ total_price|intcomma }}</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- INFO -->
+            <div class="alert alert-light border mt-3 small">
+                <i class="fas fa-info-circle me-1"></i>
+                Perubahan jumlah akan otomatis disimpan setelah Anda berhenti mengetik.
+            </div>
+
+            <!-- ACTION -->
+            <div class="d-flex justify-content-between flex-wrap gap-2 mt-3">
+                <a href="/produk/" class="btn btn-sm btn-outline-dark-main">
+                    <i class="fas fa-arrow-left me-1"></i>Lanjut Belanja
+                </a>
+                <a href="/checkout/" class="btn btn-sm btn-dark-main">
+                    <i class="fas fa-check-circle me-1"></i>Checkout
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="fas fa-info-circle me-2"></i>Keranjang belanja Anda kosong
+</div>
+
+<div class="text-center mt-3">
+    <a href="/produk/" class="btn btn-dark-main btn-sm">
+        <i class="fas fa-box-open me-1"></i>Lihat Produk
+    </a>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.quantity-input');
+
+    inputs.forEach(input => {
+        let timeout;
+        input.addEventListener('input', function () {
+            clearTimeout(timeout);
+
+            const id = this.dataset.itemId;
+            const price = parseFloat(this.dataset.price);
+            const qty = parseInt(this.value) || 0;
+            const max = parseInt(this.max);
+
+            if (qty > max) {
+                this.value = max;
+                return;
+            }
+
+            document.getElementById(`subtotal-${id}`).textContent =
+                `Rp ${(qty * price).toLocaleString('id-ID')}`;
+
+            document.getElementById(`saving-${id}`).style.display = 'inline';
+
+            timeout = setTimeout(() => {
+                document.getElementById(`update-form-${id}`).submit();
+            }, 500);
+        });
+    });
+});
+</script>
+
+{% endblock %}
