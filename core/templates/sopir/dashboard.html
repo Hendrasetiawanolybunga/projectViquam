@@ -4,6 +4,14 @@
 {% block title %}Dashboard {% if user.is_superuser %}Admin{% else %}Sopir{% endif %} - VIQUAM{% endblock %}
 
 {% block content %}
+<!-- Leaflet CSS & Styles -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet Control Geocoder CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<style>
+    #routeMap { height: 400px; width: 100%; border-radius: 8px; margin-bottom: 20px; z-index: 1; border: 2px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+</style>
+
 <div class="container pt-4">
     <div class="row">
         <div class="col-12">
@@ -19,6 +27,28 @@
             {% endif %}
             
             <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Peta Rute Pengiriman</h5>
+                </div>
+                <div class="card-body">
+                    {% if not user.is_superuser and pesanan_json != '[]' %}
+                        <div id="routeMap"></div>
+                        <p class="text-muted mb-0"><small><i class="fas fa-info-circle me-1"></i>Klik marker untuk melihat detail pesanan dan arahan Google Maps</small></p>
+                    {% elif user.is_superuser %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Peta rute hanya tersedia untuk sopir yang sedang login.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Tidak ada pengiriman aktif saat ini.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-truck-loading me-2"></i>Daftar Pengiriman yang Perlu Diverifikasi{% if user.is_superuser %} (Semua Sopir){% endif %}</h5>
                 </div>
@@ -68,4 +98,89 @@
         </div>
     </div>
 </div>
+
+{% if not user.is_superuser and pesanan_json != '[]' %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Control Geocoder JS -->
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // FIX LEAFLET MARKER 404 ISSUE
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+       iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    });
+    
+    // Parse pesanan data from JSON
+    const pesananData = {{ pesanan_json|safe }};
+    
+    // Filter pesanan with valid coordinates
+    const validPesanan = pesananData.filter(p => p.lat !== null && p.lng !== null);
+    
+   if (validPesanan.length > 0) {
+        // Define Layers
+        const osmLayer= L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        });
+        const satelitLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '© Google Satellite'
+        });
+
+        // Initialize map centered on first delivery location
+        const firstLocation = [validPesanan[0].lat, validPesanan[0].lng];
+        const map = L.map('routeMap', {
+            center: firstLocation,
+            zoom: 13,
+            layers: [osmLayer]
+        });
+        
+        // Layer Control
+        L.control.layers({
+            "Peta Jalan": osmLayer,
+            "Satelit": satelitLayer
+        }).addTo(map);
+
+        // Search Control (Geocoder) - Optional for driver dashboard
+        L.Control.geocoder({
+            defaultMarkGeocode: false,
+            placeholder: "Cari alamat..."
+        }).on('markgeocode', function(e) {
+            map.setView(e.geocode.center, 16);
+        }).addTo(map);
+        
+        // Create markers for each delivery
+        validPesanan.forEach(function(pesanan) {
+            const marker= L.marker([pesanan.lat, pesanan.lng]).addTo(map);
+            
+            // Create popup content with order details
+            const popupContent = `
+                <div style="min-width: 200px;">
+                    <h6 style="margin-bottom: 8px; font-weight: bold;"><i class="fas fa-box me-2"></i>${pesanan.pelanggan_nama}</h6>
+                    <p style="margin: 5px 0;"><strong>Alamat:</strong><br>${pesanan.alamat}</p>
+                    <p style="margin: 5px 0;"><strong>Total:</strong> Rp ${parseInt(pesanan.total).toLocaleString('id-ID')}</p>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${pesanan.lat},${pesanan.lng}" target="_blank" 
+                       class="btn btn-sm btn-primary" style="display: inline-block; margin-top: 8px; text-decoration: none; color: white; padding: 5px 10px; border-radius: 4px;">
+                        <i class="fas fa-directions me-1"></i>Arahkan (G-Maps)
+                    </a>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+        });
+        
+        // Fit bounds to show all markers
+        const group = new L.featureGroup(validPesanan.map(p => L.marker([p.lat, p.lng])));
+        map.fitBounds(group.getBounds().pad(0.1));
+        
+        // Fix for map rendering issues when container is initially hidden
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 500);
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

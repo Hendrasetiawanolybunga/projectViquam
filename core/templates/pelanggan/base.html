@@ -285,7 +285,11 @@
                     {% if request.session.pelanggan_id %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i>{{ request.session.pelanggan_nama }}
+                            {% if request.session.pelanggan_is_langganan %}
+                                <i class="fas fa-crown me-1 text-warning"></i>{{ request.session.pelanggan_nama }}
+                            {% else %}
+                                <i class="fas fa-user me-1"></i>{{ request.session.pelanggan_nama }}
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="/akun/"><i class="fas fa-user-cog me-2"></i>Akun</a></li>

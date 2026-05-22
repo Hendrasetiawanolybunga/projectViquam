@@ -4,6 +4,13 @@
 {% block title %}Checkout - VIQUAM{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Control Geocoder CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<!-- Leaflet Control Geocoder JS -->
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
 <div class="row">
     <div class="col-12">
         <h2 class="mb-4"><i class="fas fa-check-circle me-2"></i>Checkout Pesanan</h2>
@@ -35,15 +42,19 @@
                         <div class="col-md-6">
                             <p><strong>Nomor Rekening:</strong> 
                                 <span id="rekening">1610001874879</span>
-                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="copyRekening()">
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="copyRekening()">
                                     <i class="fas fa-copy me-1"></i>Salin
                                 </button>
                             </p>
                         </div>
                     </div>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if is_langganan %}
+                        <strong>Informasi Pembayaran:</strong> Pelanggan langganan dapat memilih Transfer, COD (Bayar di Tempat), atau Piutang. Untuk Transfer, harap upload bukti setelah transfer.
+                        {% else %}
                         <strong>Perhatian!</strong> Harap melakukan pembayaran sebelum memesan. Setelah transfer, unggah bukti pembayaran di bawah ini.
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -57,63 +68,62 @@
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informasi Pengiriman</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data" action="/checkout/">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'checkout_pemesanan' %}">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="{{ form.idKelurahanPengiriman.id_for_label }}" class="form-label">Wilayah Tujuan Pengiriman</label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <select name="provinsi" id="id_provinsi_checkout" class="form-select">
-                                        <option value="">Pilih Provinsi...</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <select name="kabupaten" id="id_kabupaten_checkout" class="form-select">
-                                        <option value="">Pilih Kabupaten/Kota...</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-6">
-                                    <select name="kecamatan" id="id_kecamatan_checkout" class="form-select">
-                                        <option value="">Pilih Kecamatan...</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <select name="idKelurahanPengiriman" id="id_kelurahan_pengiriman" class="form-select">
-                                        <option value="">Pilih Kelurahan/Desa...</option>
-                                    </select>
-                                </div>
-                            </div>
-                            {% if form.idKelurahanPengiriman.errors %}
-                                <div class="text-danger">
-                                    {{ form.idKelurahanPengiriman.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
                         
                         <div class="mb-3">
-                            <label for="{{ form.alamatPengiriman.id_for_label }}" class="form-label">Alamat Pengiriman</label>
+                            <label class="form-label fw-bold">Titik Lokasi Pengiriman</label>
+                            <div id="map" style="height: 350px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mb-2 mt-1" onclick="getLocation()"><i class="fas fa-crosshairs me-1"></i> Dapatkan Lokasi Saat Ini</button>
+                            
+                            {{ form.latitude }}
+                            {{ form.longitude }}
+                            
+                            {% if form.latitude.errors or form.longitude.errors %}
+                                <div class="text-danger mt-1 small">
+                                    Titik koordinat pengiriman wajib diisi. Silakan geser pin di peta.
+                                </div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-2"><i class="fas fa-map-marker-alt text-danger me-1"></i> Geser pin penanda merah (marker) ke atap rumah / lokasi pasti pengiriman Anda.</small>
+                        </div>
+                        
+                        <div class="mb-3 mt-4">
+                            <label for="{{ form.alamatPengiriman.id_for_label }}" class="form-label fw-bold">Detail Patokan Alamat Pengiriman</label>
                             {{ form.alamatPengiriman }}
                             {% if form.alamatPengiriman.errors %}
-                                <div class="text-danger">
+                                <div class="text-danger mt-1 small">
                                     {{ form.alamatPengiriman.errors }}
                                 </div>
                             {% endif %}
+                            <small class="text-muted">Contoh: "Rumah cat kuning pagar hitam, sebelah pos kamling."</small>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.buktiBayar.id_for_label }}" class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
+                        <!-- Payment Method Selection (Only for Langganan) -->
+                        {% if is_langganan %}
+                        <div class="mb-3 mt-3" id="paymentMethodSection">
+                            <label for="{{ form.jenisPembayaran.id_for_label }}" class="form-label fw-bold">Metode Pembayaran</label>
+                            {{ form.jenisPembayaran }}
+                            {% if form.jenisPembayaran.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {{ form.jenisPembayaran.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">Pelanggan langganan dapat memilih Transfer, COD, atau Piutang.</small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.buktiBayar.id_for_label }}" class="form-label fw-bold">Bukti Pembayaran <span class="text-danger" id="buktiBayarRequired">*</span></label>
                             {{ form.buktiBayar }}
-                            <div class="form-text">Upload bukti pembayaran. Format yang diterima: JPG, PNG, PDF (Max 5MB)</div>
+                            <div class="form-text" id="buktiBayarHelp">Upload bukti transfer. Format: JPG, PNG (Maks 5MB)</div>
                             {% if form.buktiBayar.errors %}
-                                <div class="text-danger">
+                                <div class="text-danger mt-1 small">
                                     {{ form.buktiBayar.errors }}
                                 </div>
                             {% endif %}
                         </div>
                         
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background-color: #0b1d28;">
                             <i class="fas fa-check-circle me-2"></i>Konfirmasi Pesanan
                         </button>
                     </form>
@@ -122,24 +132,25 @@
         </div>
         
         <div class="col-lg-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Ringkasan Pesanan</h5>
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Ringkasan Pesanan</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
                         {% for item in cart_items %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <div>
-                                <h6 class="my-0">{{ item.nama }}</h6>
-                                <small class="text-muted">{{ item.quantity }} {{ item.satuan }} x Rp {{ item.harga|intcomma }}</small>
+                        <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ item.nama }}</div>
+                                <span class="badge bg-secondary rounded-pill">{{ item.quantity }} {{ item.satuan }}</span>
+                                <small class="text-muted d-block mt-1">@ Rp {{ item.harga|intcomma }}</small>
                             </div>
-                            <span class="text-muted">Rp {{ item.subtotal|intcomma }}</span>
+                            <span class="fw-bold">Rp {{ item.subtotal|intcomma }}</span>
                         </li>
                         {% endfor %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Total</span>
-                            <strong>Rp {{ total_price|intcomma }}</strong>
+                        <li class="list-group-item d-flex justify-content-between bg-light p-3">
+                            <span class="fw-bold">Total Pembayaran</span>
+                            <strong class="fs-5 text-primary">Rp {{ total_price|intcomma }}</strong>
                         </li>
                     </ul>
                 </div>
@@ -149,37 +160,32 @@
 {% else %}
     <div class="row">
         <div class="col-12">
-            <div class="alert alert-warning text-center">
-                <i class="fas fa-exclamation-triangle me-2"></i>Keranjang belanja Anda kosong. Tidak dapat melakukan checkout.
-            </div>
-            
-            <div class="text-center mt-4">
-                <a href="/produk/" class="btn btn-primary">
-                    <i class="fas fa-box-open me-2"></i>Lihat Produk
+            <div class="alert alert-warning text-center p-5 shadow-sm">
+                <i class="fas fa-shopping-basket fa-3x text-warning mb-3"></i>
+                <h4>Keranjang Belanja Kosong</h4>
+                <p class="text-muted mb-4">Anda belum menambahkan produk apapun ke dalam keranjang.</p>
+                <a href="{% url 'list_produk' %}" class="btn btn-primary px-4 py-2">
+                    <i class="fas fa-box-open me-2"></i>Mulai Belanja
                 </a>
             </div>
         </div>
     </div>
 {% endif %}
 
-<!-- Hidden textarea for copy fallback -->
 <textarea id="hidden-textarea" style="position: fixed; left: -9999px; top: -9999px;"></textarea>
 
 <script>
+// Fungsi Copy Rekening
 function copyRekening() {
     const rekeningText = document.getElementById('rekening').innerText;
     
-    // Try modern clipboard API first
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(rekeningText).then(() => {
-            showNotification('Berhasil!', 'Nomor rekening telah disalin ke clipboard.', 'success');
+            alert('Nomor rekening berhasil disalin!');
         }).catch(err => {
-            console.error('Failed to copy with Clipboard API: ', err);
-            // Fallback to execCommand
             fallbackCopyTextToClipboard(rekeningText);
         });
     } else {
-        // Fallback to execCommand
         fallbackCopyTextToClipboard(rekeningText);
     }
 }
@@ -187,134 +193,139 @@ function copyRekening() {
 function fallbackCopyTextToClipboard(text) {
     const textArea = document.getElementById('hidden-textarea');
     textArea.value = text;
-    
-    // Select text
     textArea.focus();
     textArea.select();
-    
     try {
-        // Execute copy command
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showNotification('Berhasil!', 'Nomor rekening telah disalin ke clipboard.', 'success');
-        } else {
-            showNotification('Gagal', 'Gagal menyalin nomor rekening. Silakan salin secara manual.', 'danger');
-        }
+        document.execCommand('copy');
+        alert('Nomor rekening berhasil disalin!');
     } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
-        showNotification('Gagal', 'Gagal menyalin nomor rekening. Silakan salin secara manual.', 'danger');
+        alert('Gagal menyalin rekening. Silakan salin manual.');
     }
 }
 
-function showNotification(title, message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        <strong>${title}</strong> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 3000);
-}
-
-// Chained dropdown functionality for checkout
+// Logika Leaflet Maps
 document.addEventListener('DOMContentLoaded', function() {
-    const provinsiSelect = document.getElementById('id_provinsi_checkout');
-    const kabupatenSelect = document.getElementById('id_kabupaten_checkout');
-    const kecamatanSelect = document.getElementById('id_kecamatan_checkout');
-    const kelurahanSelect = document.getElementById('id_kelurahan_pengiriman');
-
-    // Function to populate dropdown with options
-    function populateDropdown(selectElement, options, placeholderText) {
-        // Clear existing options except placeholder
-        selectElement.innerHTML = '';
-        
-        // Add placeholder option
-        const placeholderOption = document.createElement('option');
-        placeholderOption.value = '';
-        placeholderOption.textContent = placeholderText;
-        selectElement.appendChild(placeholderOption);
-
-        // Add new options
-        options.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.idKabupaten || option.idKecamatan || option.idKelurahan;
-            optionElement.textContent = option.nama;
-            selectElement.appendChild(optionElement);
+    // Payment Method Toggle Logic (for Langganan only)
+    const paymentMethodSelect = document.getElementById('id_jenisPembayaran');
+    const buktiBayarField = document.getElementById('id_buktiBayar').closest('.mb-4');
+    const buktiBayarRequired = document.getElementById('buktiBayarRequired');
+    const buktiBayarHelp = document.getElementById('buktiBayarHelp');
+    
+    if (paymentMethodSelect) {
+        // Add change event listener
+        paymentMethodSelect.addEventListener('change', function() {
+            const selectedMethod = this.value;
+            
+            // Show/hide based on selection
+            if (selectedMethod === 'COD') {
+                buktiBayarField.style.display = 'none';
+                buktiBayarRequired.textContent = '';
+                buktiBayarHelp.textContent = 'Pembayaran dilakukan saat barang diterima.';
+            } else if (selectedMethod === 'Piutang') {
+                buktiBayarField.style.display = 'none';
+                buktiBayarRequired.textContent = '';
+                buktiBayarHelp.textContent = 'Tanggal jatuh tempo akan ditetapkan admin setelah pesanan diproses.';
+            } else if (selectedMethod === 'Transfer') {
+                buktiBayarField.style.display = 'block';
+                buktiBayarRequired.textContent = '*';
+                buktiBayarHelp.textContent = 'Upload bukti transfer. Format: JPG, PNG (Maks 5MB)';
+            }
         });
+        
+        // Trigger initial state
+        paymentMethodSelect.dispatchEvent(new Event('change'));
     }
-
-    // Event listener for Provinsi change
-    provinsiSelect.addEventListener('change', function() {
-        const provinsiId = this.value;
-        
-        if (provinsiId) {
-            // Fetch Kabupaten based on Provinsi
-            fetch(`/get-kabupaten/?provinsi_id=${provinsiId}`)
-                .then(response => response.json())
-                .then(data => {
-                    populateDropdown(kabupatenSelect, data, 'Pilih Kabupaten/Kota...');
-                    // Reset dependent dropdowns
-                    populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
-                    populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
-                })
-                .catch(error => console.error('Error fetching kabupaten:', error));
-        } else {
-            // Reset all dependent dropdowns
-            populateDropdown(kabupatenSelect, [], 'Pilih Kabupaten/Kota...');
-            populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
-            populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
-        }
+    
+    // FIX LEAFLET MARKER 404 ISSUE
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
     });
-
-    // Event listener for Kabupaten change
-    kabupatenSelect.addEventListener('change', function() {
-        const kabupatenId = this.value;
+    
+    // Cek apakah kontainer map ada (mencegah error jika keranjang kosong)
+    if (document.getElementById('map')) {
+        const defaultLat = -10.1583; // Kupang
+        const defaultLng = 123.5982;
         
-        if (kabupatenId) {
-            // Fetch Kecamatan based on Kabupaten
-            fetch(`/get-kecamatan/?kabupaten_id=${kabupatenId}`)
-                .then(response => response.json())
-                .then(data => {
-                    populateDropdown(kecamatanSelect, data, 'Pilih Kecamatan...');
-                    // Reset dependent dropdown
-                    populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
-                })
-                .catch(error => console.error('Error fetching kecamatan:', error));
-        } else {
-            // Reset dependent dropdowns
-            populateDropdown(kecamatanSelect, [], 'Pilih Kecamatan...');
-            populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
-        }
-    });
+        // Define Layers
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        });
+        const satelitLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '© Google Satellite'
+        });
 
-    // Event listener for Kecamatan change
-    kecamatanSelect.addEventListener('change', function() {
-        const kecamatanId = this.value;
+        const map = L.map('map', {
+            center: [defaultLat, defaultLng],
+            zoom: 14,
+            layers: [osmLayer]
+        });
+
+        // Layer Control
+        L.control.layers({
+            "Peta Jalan": osmLayer,
+            "Satelit": satelitLayer
+        }).addTo(map);
+
+        // Search Control (Geocoder)
+        L.Control.geocoder({
+            defaultMarkGeocode: false,
+            placeholder: "Cari nama jalan/tempat..."
+        }).on('markgeocode', function(e) {
+            const center = e.geocode.center;
+            map.setView(center, 16);
+            marker.setLatLng(center);
+            updateInputs(center.lat, center.lng);
+        }).addTo(map);
         
-        if (kecamatanId) {
-            // Fetch Kelurahan based on Kecamatan
-            fetch(`/get-kelurahan/?kecamatan_id=${kecamatanId}`)
-                .then(response => response.json())
-                .then(data => {
-                    populateDropdown(kelurahanSelect, data, 'Pilih Kelurahan/Desa...');
-                })
-                .catch(error => console.error('Error fetching kelurahan:', error));
-        } else {
-            // Reset dependent dropdown
-            populateDropdown(kelurahanSelect, [], 'Pilih Kelurahan/Desa...');
+        const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+        const latInput = document.getElementById('id_latitude');
+        const lngInput = document.getElementById('id_longitude');
+        
+        function updateInputs(lat, lng) {
+            if(latInput && lngInput) {
+                latInput.value = lat.toFixed(7);
+                lngInput.value = lng.toFixed(7);
+            }
         }
-    });
+        
+        // Inisialisasi input
+        updateInputs(defaultLat, defaultLng);
+        
+        // Drag marker
+        marker.on('dragend', function() {
+            const pos = marker.getLatLng();
+            updateInputs(pos.lat, pos.lng);
+        });
+
+        // Click map to move marker
+        map.on('click', function(e) {
+            marker.setLatLng(e.latlng);
+            updateInputs(e.latlng.lat, e.latlng.lng);
+        });
+        
+        // Fix bug render
+        setTimeout(function() { map.invalidateSize(); }, 500);
+
+        // Geolocation function (triggered by button)
+        window.getLocation = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    marker.setLatLng([lat, lng]);
+                    map.setView([lat, lng], 17);
+                    updateInputs(lat, lng);
+                }, function(error) {
+                    alert('Gagal mendapatkan lokasi GPS yang akurat. Silakan cari manual atau pastikan GPS device Anda menyala.');
+                }, { enableHighAccuracy: true, timeout: 10000 });
+            } else {
+                alert('Browser Anda tidak mendukung deteksi lokasi.');
+            }
+        };
+    }
 });
 </script>
 {% endblock %}

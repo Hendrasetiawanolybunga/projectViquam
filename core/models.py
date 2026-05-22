@@ -5,68 +5,21 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-class Provinsi(models.Model):
-    idProvinsi = models.AutoField(primary_key=True, verbose_name='ID Provinsi')
-    nama = models.CharField(max_length=100, verbose_name='Provinsi')
-
-    def __str__(self):
-        return self.nama
-    
-    class Meta:
-        verbose_name = 'Provinsi'
-        verbose_name_plural = 'Provinsi'
-
-
-class Kabupaten(models.Model):
-    idKabupaten = models.AutoField(primary_key=True, verbose_name='ID Kabupaten')
-    idProvinsi = models.ForeignKey(Provinsi, on_delete=models.PROTECT, verbose_name='Provinsi')
-    nama = models.CharField(max_length=100, verbose_name='Kabupaten/Kota')
-
-    def __str__(self):
-        return self.nama
-    
-    class Meta:
-        verbose_name = 'Kabupaten'
-        verbose_name_plural = 'Kabupaten'
-
-
-class Kecamatan(models.Model):
-    idKecamatan = models.AutoField(primary_key=True, verbose_name='ID Kecamatan')
-    idKabupaten = models.ForeignKey(Kabupaten, on_delete=models.PROTECT, verbose_name='Kabupaten')
-    nama = models.CharField(max_length=100, verbose_name='Kecamatan')
-
-    def __str__(self):
-        return self.nama
-    
-    class Meta:
-        verbose_name = 'Kecamatan'
-        verbose_name_plural = 'Kecamatan'
-
-
-class Kelurahan(models.Model):
-    idKelurahan = models.AutoField(primary_key=True, verbose_name='ID Kelurahan')
-    idKecamatan = models.ForeignKey(Kecamatan, on_delete=models.PROTECT, verbose_name='Kecamatan')
-    nama = models.CharField(max_length=100, verbose_name='Kelurahan/Desa')
-
-    def __str__(self):
-        return self.nama
-    
-    class Meta:
-        verbose_name = 'Kelurahan'
-        verbose_name_plural = 'Kelurahan'
-
 
 class Pelanggan(models.Model):
     idPelanggan = models.AutoField(primary_key=True, verbose_name='ID Pelanggan')
-    idKelurahan = models.ForeignKey(Kelurahan, on_delete=models.PROTECT, null=True, blank=True, verbose_name="Kelurahan/Desa")
     nama = models.CharField(max_length=50, verbose_name='Nama Pelanggan')
     noWa = models.CharField(max_length=20, verbose_name='Nomor WhatsApp')
     alamat = models.CharField(max_length=200, verbose_name='Detail Alamat (Blok/No Rumah)')
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Latitude')
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Longitude')
     username = models.CharField(max_length=20, unique=True, verbose_name='Username')
     password = models.CharField(max_length=150, verbose_name='Password (Hash)')
+    isLangganan = models.BooleanField(default=False, verbose_name='Pelanggan Langganan')
+    npwp = models.CharField(max_length=20, null=True, blank=True, verbose_name='NPWP')
 
     def save(self, *args, **kwargs):
-        # PERBAIKAN KRITIS: HASH HANYA JIKA BUKAN HASH (Misal, panjangnya kurang dari hash pbkdf2)
+       
         if len(self.password) < 60 or not self.password.startswith('pbkdf2_sha256'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
@@ -182,9 +135,22 @@ class Pemesanan(models.Model):
         ('Dibatalkan', 'Dibatalkan'),
     ]
     
+    JENIS_PEMBAYARAN_CHOICES = [
+        ('Transfer', 'Transfer'),
+        ('COD', 'COD (Bayar di Tempat)'),
+        ('Piutang', 'Piutang (Bayar Nanti)'),
+    ]
+    
+    STATUS_PEMBAYARAN_CHOICES = [
+        ('Belum Bayar', 'Belum Bayar'),
+        ('DP', 'DP (Uang Muka)'),
+        ('Lunas', 'Lunas'),
+    ]
+    
     idPemesanan = models.AutoField(primary_key=True, verbose_name='ID Pemesanan')
     idPelanggan = models.ForeignKey(Pelanggan, on_delete=models.PROTECT, verbose_name='Pelanggan') 
-    idKelurahanPengiriman = models.ForeignKey(Kelurahan, on_delete=models.PROTECT, null=True, blank=True, verbose_name="Kelurahan/Desa Tujuan")
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Latitude Pengiriman')
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Longitude Pengiriman')
     tanggalPemesanan = models.DateTimeField(default=timezone.now, verbose_name='Tanggal Pemesanan')
     alamatPengiriman = models.CharField(max_length=200, verbose_name='Alamat Pengiriman')
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Total Harga') 
@@ -192,16 +158,56 @@ class Pemesanan(models.Model):
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='Diproses', verbose_name='Status Pemesanan')
     fotoPengiriman = models.ImageField(upload_to='bukti_pengiriman/', null=True, blank=True, verbose_name='Foto Pengiriman')
     idSopir = models.ForeignKey(Sopir, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Sopir Pengirim')
-    
-    # Audit Tracking Fields
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Diperbarui Oleh')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='Waktu Pembaruan Terakhir')
-    keterangan_admin = models.CharField(max_length=255, null=True, blank=True, verbose_name='Keterangan Aktivitas Admin') 
+    keterangan_admin = models.CharField(max_length=255, null=True, blank=True, verbose_name='Keterangan Aktivitas Admin')
+    jenisPembayaran = models.CharField(max_length=25, choices=JENIS_PEMBAYARAN_CHOICES, default='Transfer', verbose_name='Jenis Pembayaran')
+    statusPembayaran = models.CharField(max_length=25, choices=STATUS_PEMBAYARAN_CHOICES, default='Lunas', verbose_name='Status Pembayaran')
+    nominalDibayar = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Nominal Dibayar')
+    sisaTagihan = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Sisa Tagihan')
+    jatuhTempo = models.DateField(null=True, blank=True, verbose_name='Jatuh Tempo') 
     
     def update_total(self):
         total_subtotal = self.detailpemesanan_set.aggregate(Sum('subTotal'))['subTotal__sum']
         self.total = total_subtotal if total_subtotal is not None else 0.00
-        self.save(update_fields=['total']) 
+        self.save(update_fields=['total'])
+    
+    def update_status_pembayaran(self):
+        """
+        Auto-update status pembayaran berdasarkan nominal yang sudah dibayar.
+        Dipanggil saat save untuk memastikan konsistensi data.
+        """
+        if self.nominalDibayar >= self.total and self.total > 0:
+            self.statusPembayaran = 'Lunas'
+            self.sisaTagihan = 0
+        elif self.nominalDibayar == 0 and self.jenisPembayaran in ['COD', 'Piutang']:
+            self.statusPembayaran = 'Belum Bayar'
+            self.sisaTagihan = self.total
+    
+    def clean(self):
+        """
+        Validasi untuk memastikan konsistensi data pembayaran.
+        Skip validasi ketat untuk instance baru dari form checkout.
+        """
+        from django.core.exceptions import ValidationError
+        from decimal import Decimal
+        
+        # Convert all to Decimal for safe comparison
+        total = Decimal(str(self.total or 0))
+        nominal_dibayar = Decimal(str(self.nominalDibayar or 0))
+        sisa_tagihan = Decimal(str(self.sisaTagihan or 0))
+        tolerance = Decimal('0.01')
+        
+        # Nominal dibayar tidak boleh melebihi total (validasi inti)
+        if nominal_dibayar > total:
+            raise ValidationError('Nominal dibayar tidak boleh melebihi total pesanan.')
+        
+        # Sisa tagihan harus konsisten - tapi skip untuk instance baru yang belum final
+        # Instance dari form checkout akan divalidasi di view saat create()
+        if self.pk is not None or sisa_tagihan is not None:
+            expected_sisa = total - nominal_dibayar
+            if abs(sisa_tagihan - expected_sisa) > tolerance:
+                raise ValidationError('Sisa tagihan tidak konsisten dengan nominal dibayar.') 
     
     def __str__(self):
         return f'{self.tanggalPemesanan.strftime("%Y-%m-%d %H:%M")} - {self.idPelanggan.nama}'

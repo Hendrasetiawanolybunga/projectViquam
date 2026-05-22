@@ -2,16 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Laporan URLs (PDF generation)
     path('laporan/pelanggan/', views.laporan_pelanggan, name='laporan-pelanggan'),
     path('laporan/produk/', views.laporan_produk, name='laporan-produk'),
     path('laporan/sopir-kendaraan/', views.laporan_sopir_kendaraan, name='laporan-sopir-kendaraan'),
     path('laporan/pemesanan-pendapatan/', views.laporan_pemesanan_pendapatan, name='laporan-pemesanan-pendapatan'),
     path('laporan/feedback/', views.laporan_feedback, name='laporan-feedback'),
-    
-    # AJAX endpoints for region selection
-    path('get-kabupaten/', views.get_kabupaten, name='get_kabupaten'),
-    path('get-kecamatan/', views.get_kecamatan, name='get_kecamatan'),
-    path('get-kelurahan/', views.get_kelurahan, name='get_kelurahan'),
     
     # Sopir URLs
     path('sopir/login/', views.sopir_login, name='sopir-login'),

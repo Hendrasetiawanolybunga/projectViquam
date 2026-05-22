@@ -28,8 +28,8 @@
 
 /* ================= TABLE ================= */
 .table-history {
-    font-size: .85rem;
-    min-width: 640px;
+    font-size: .8rem;
+    min-width: 900px;
 }
 
 .table-history thead {
@@ -38,22 +38,47 @@
 
 .table-history thead th {
     color: #fff;
-    font-size: .75rem;
+    font-size: .7rem;
     text-transform: uppercase;
     white-space: nowrap;
     border: none;
+    padding: 12px 8px;
 }
 
 .table-history td {
-    white-space: nowrap;
     vertical-align: middle;
+    padding: 10px 8px;
+}
+
+/* ================= METHOD BADGE ================= */
+.badge-method {
+    font-size: .65rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.bg-method-transfer {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.bg-method-cod {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.bg-method-piutang {
+    background: #f8d7da;
+    color: #842029;
 }
 
 /* ================= STATUS BADGE ================= */
 .badge-status {
-    font-size: .7rem;
-    padding: 6px 12px;
-    border-radius: 20px;
+    font-size: .65rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
 }
 
 .bg-status-process {
@@ -146,7 +171,10 @@
                             <th>#</th>
                             <th>Tanggal</th>
                             <th>Total</th>
-                            <th>Status</th>
+                            <th>Metode Bayar</th>
+                            <th>Status Bayar</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Status Pesanan</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -154,26 +182,51 @@
                         {% for pesanan in pesanan_list %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td>{{ pesanan.tanggalPemesanan|date:"d M Y H:i" }}</td>
+                            <td>{{ pesanan.tanggalPemesanan|date:"d M Y" }}</td>
                             <td class="fw-semibold">
                                 Rp {{ pesanan.total|intcomma }}
                             </td>
                             <td>
+                                {% if pesanan.jenisPembayaran == 'Transfer' %}
+                                    <span class="badge badge-method bg-method-transfer">Transfer</span>
+                                {% elif pesanan.jenisPembayaran == 'COD' %}
+                                    <span class="badge badge-method bg-method-cod">COD</span>
+                                {% elif pesanan.jenisPembayaran == 'Piutang' %}
+                                    <span class="badge badge-method bg-method-piutang">Piutang</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pesanan.statusPembayaran == 'Lunas' %}
+                                    <span class="badge badge-status bg-success">Lunas</span>
+                                {% else %}
+                                    <span class="badge badge-status bg-danger">Belum Bayar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pesanan.jatuhTempo %}
+                                    <span class="text-muted small">{{ pesanan.jatuhTempo|date:"d M Y" }}</span>
+                                {% elif pesanan.jenisPembayaran == 'Piutang' %}
+                                    <span class="text-warning small fw-semibold">Menunggu admin</span>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if pesanan.status == 'Diproses' %}
                                     <span class="badge badge-status bg-status-process">
-                                        {{ pesanan.status }}
+                                        Diproses
                                     </span>
                                 {% elif pesanan.status == 'Dikirim' %}
                                     <span class="badge badge-status bg-status-ship">
-                                        {{ pesanan.status }}
+                                        Dikirim
                                     </span>
                                 {% elif pesanan.status == 'Selesai' %}
                                     <span class="badge badge-status bg-status-done">
-                                        {{ pesanan.status }}
+                                        Selesai
                                     </span>
                                 {% elif pesanan.status == 'Dibatalkan' %}
                                     <span class="badge badge-status bg-status-cancel">
-                                        {{ pesanan.status }}
+                                        Dibatalkan
                                     </span>
                                 {% else %}
                                     <span class="badge badge-status bg-secondary">

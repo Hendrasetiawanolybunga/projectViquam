@@ -112,6 +112,23 @@
                 <p><strong>Nama:</strong> {{ pelanggan.nama }}</p>
                 <p><strong>Nomor WhatsApp:</strong> {{ pelanggan.noWa }}</p>
                 <p><strong>Alamat:</strong> {{ pelanggan.alamat }}</p>
+                
+                <hr>
+                
+                <p><strong>Tipe Akun:</strong> 
+                    {% if pelanggan.isLangganan %}
+                        <span class="badge bg-success"><i class="fas fa-crown me-1"></i>Pelanggan Langganan</span>
+                    {% else %}
+                        <span class="badge bg-info"><i class="fas fa-user me-1"></i>Pelanggan Umum</span>
+                    {% endif %}
+                </p>
+                
+                {% if pelanggan.isLangganan %}
+                    {% if pelanggan.npwp %}
+                    <p><strong>NPWP:</strong> {{ pelanggan.npwp }}</p>
+                    {% endif %}
+                    <p class="text-muted small"><i class="fas fa-info-circle me-1"></i>Akun langganan dibuat oleh internal PT Viquam. Untuk perubahan data, hubungi admin.</p>
+                {% endif %}
             </div>
         </div>
     </div>

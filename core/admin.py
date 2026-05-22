@@ -9,10 +9,9 @@ import locale
 from decimal import Decimal
 from django.contrib.humanize.templatetags.humanize import intcomma
 
-from .models import Pelanggan, Sopir, Kendaraan, Produk, StokMasuk, Pemesanan, DetailPemesanan, Feedback, Provinsi, Kabupaten, Kecamatan, Kelurahan
+from .models import Pelanggan, Sopir, Kendaraan, Produk, StokMasuk, Pemesanan, DetailPemesanan, Feedback
 from . import views
 
-# Custom Admin Site to override index view and add custom functionality
 class CustomAdminSite(admin.AdminSite):
     site_header = 'Viquam Administration'
     site_title = 'Viquam Admin'
@@ -23,21 +22,21 @@ class CustomAdminSite(admin.AdminSite):
         """
         Override the default admin index view to use our custom dashboard
         """
-        # Import here to avoid circular imports
+       
         from . import views
         
-        # Get the dashboard context from our view
+       
         dashboard_context = views.get_dashboard_context()
         
-        # Merge with any extra context
+       
         if extra_context is None:
             extra_context = {}
         extra_context.update(dashboard_context)
         
-        # Add user information to context
+       
         extra_context['user'] = request.user
         
-        # Check if user is in Pimpinan group but not superuser
+      
         if not request.user.is_superuser and request.user.groups.filter(name='Pimpinan').exists():
             extra_context['is_pimpinan'] = True
         else:
@@ -49,37 +48,34 @@ class CustomAdminSite(admin.AdminSite):
         """
         Override to customize app list based on user group
         """
-        # Check if user is in Pimpinan group but not superuser
+       
         if not request.user.is_superuser and request.user.groups.filter(name='Pimpinan').exists():
-            # Get the default app list
+          
             app_list = super().get_app_list(request)
             
-            # Filter to show only allowed models for Pimpinan
+          
             allowed_models = ['Feedback']
             
-            # Filter each app's models
+          
             filtered_app_list = []
             for app in app_list:
                 filtered_models = []
                 for model in app.get('models', []):
-                    # Check if model name is in allowed models
+                   
                     if model.get('object_name') in allowed_models:
-                        # For Pimpinan, limit to view-only actions
+                       
                         filtered_models.append(model)
                 
-                # Only add app if it has allowed models
+              
                 if filtered_models:
                     app['models'] = filtered_models
                     filtered_app_list.append(app)
             
             return filtered_app_list
         
-        # Karyawan group checking removed - functionality now handled by Sopir
-        
-        # For superusers, return the default app list
+      
         return super().get_app_list(request)
 
-# Instantiate the custom admin site
 custom_admin_site = CustomAdminSite(name='custom_admin')
 
 try:
@@ -142,14 +138,27 @@ custom_admin_site.register(User, UserAdmin)
 
 @admin.register(Pelanggan, site=custom_admin_site)
 class PelangganAdmin(ActionColumnMixin, admin.ModelAdmin):
-    list_display = ('nama', 'noWa', 'alamat', 'username', 'actions_column')
-    search_fields = ('nama', 'username', 'noWa')
-    list_filter = ()
+    list_display = ('nama', 'noWa', 'username', 'isLangganan_display', 'npwp_display', 'actions_column')
+    search_fields = ('nama', 'username', 'noWa', 'npwp')
+    list_filter = ('isLangganan',)
+    
+    def isLangganan_display(self, obj):
+        """Display customer type with icon"""
+        if obj.isLangganan:
+            return '✓ Langganan'
+        return '✗ Umum'
+    isLangganan_display.short_description = 'Tipe Pelanggan'
+    
+    def npwp_display(self, obj):
+        """Display NPWP if available"""
+        return obj.npwp if obj.npwp else '-'
+    npwp_display.short_description = 'NPWP'
 
 @admin.register(Sopir, site=custom_admin_site)
 class SopirAdmin(ActionColumnMixin, admin.ModelAdmin):
     list_display = ('nama', 'noHp', 'username', 'actions_column')
     search_fields = ('nama', 'username', 'noHp')
+
 
 
 @admin.register(Kendaraan, site=custom_admin_site)
@@ -178,31 +187,8 @@ class StokMasukAdmin(ActionColumnMixin, admin.ModelAdmin):
     autocomplete_fields = ['idProduk']
 
 
-@admin.register(Provinsi, site=custom_admin_site)
-class ProvinsiAdmin(admin.ModelAdmin):
-    list_display = ('nama',)
-    search_fields = ('nama',)
-
-
-@admin.register(Kabupaten, site=custom_admin_site)
-class KabupatenAdmin(admin.ModelAdmin):
-    list_display = ('nama', 'idProvinsi')
-    search_fields = ('nama',)
-    autocomplete_fields = ['idProvinsi']
-
-
-@admin.register(Kecamatan, site=custom_admin_site)
-class KecamatanAdmin(admin.ModelAdmin):
-    list_display = ('nama', 'idKabupaten')
-    search_fields = ('nama',)
-    autocomplete_fields = ['idKabupaten']
-
-
-@admin.register(Kelurahan, site=custom_admin_site)
-class KelurahanAdmin(admin.ModelAdmin):
-    list_display = ('nama', 'idKecamatan')
-    search_fields = ('nama',)
-    autocomplete_fields = ['idKecamatan']
+# Provinsi, Kabupaten, Kecamatan, Kelurahan models have been removed
+# Location data is now handled via latitude/longitude coordinates
 
 
 class DetailPemesananInline(admin.TabularInline):
@@ -228,17 +214,28 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
     def total_formatted(self, obj):
         return currency_format(obj.total)
     total_formatted.short_description = 'Total Harga'
+    
+    def nominalDibayar_formatted(self, obj):
+        return currency_format(obj.nominalDibayar)
+    nominalDibayar_formatted.short_description = 'Nominal Dibayar'
+    
+    def sisaTagihan_formatted(self, obj):
+        return currency_format(obj.sisaTagihan)
+    sisaTagihan_formatted.short_description = 'Sisa Tagihan'
 
-    list_display = ('idPelanggan', 'idKelurahanPengiriman', 'tanggalPemesanan', 'total_formatted', 'status', 'idSopir', 'updated_by', 'last_updated', 'actions_column')
-    list_filter = ('status', 'idKelurahanPengiriman__idKecamatan__idKabupaten', 'idKelurahanPengiriman__idKecamatan', 'idSopir')
+    list_display = ('idPelanggan', 'tanggalPemesanan', 'total_formatted', 'jenisPembayaran', 'statusPembayaran', 'nominalDibayar_formatted', 'sisaTagihan_formatted', 'status', 'idSopir', 'actions_column')
+    list_filter = ('status', 'jenisPembayaran', 'statusPembayaran')
     search_fields = ('idPelanggan__nama', 'idPemesanan__startswith')
     date_hierarchy = 'tanggalPemesanan'
     
-    readonly_fields = ('total', 'updated_by', 'last_updated') 
+    readonly_fields = ('total', 'updated_by', 'last_updated', 'sisaTagihan') 
     
     fieldsets = (
         ('Informasi Dasar Pemesanan', {
-            'fields': ('idPelanggan', 'idKelurahanPengiriman', 'alamatPengiriman', 'status', 'idSopir', 'total', 'tanggalPemesanan')
+            'fields': ('idPelanggan', 'latitude', 'longitude', 'alamatPengiriman', 'status', 'idSopir', 'total', 'tanggalPemesanan')
+        }),
+        ('Informasi Pembayaran', {
+            'fields': ('jenisPembayaran', 'statusPembayaran', 'nominalDibayar', 'sisaTagihan', 'jatuhTempo'),
         }),
         ('Bukti Transaksi (Opsional)', {
             'fields': ('buktiBayar', 'fotoPengiriman'),
@@ -252,19 +249,24 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
 
     inlines = [DetailPemesananInline]
 
-    autocomplete_fields = ['idPelanggan', 'idSopir', 'idKelurahanPengiriman']
+    autocomplete_fields = ['idPelanggan', 'idSopir']
     
     def save_model(self, request, obj, form, change):
         """
-        Override save_model to automatically track admin activities
+        Override save_model to automatically track admin activities and update payment status
         """
-        # Set the user who made the change
+       
         obj.updated_by = request.user
         
-        # Generate dynamic keterangan based on what changed
+        # Auto-update status pembayaran based on nominal dibayar
+        obj.update_status_pembayaran()
+    
         if change:
-            # This is an update operation
-            if 'status' in form.changed_data:
+            
+            # Track payment-related changes
+            if 'nominalDibayar' in form.changed_data or 'statusPembayaran' in form.changed_data:
+                obj.keterangan_admin = f"{request.user.username} memperbarui pembayaran: {obj.statusPembayaran} (Dibayar: {obj.nominalDibayar}, Sisa: {obj.sisaTagihan})"
+            elif 'status' in form.changed_data:
                 obj.keterangan_admin = f"{request.user.username} mengubah status menjadi {obj.status}"
             elif 'idSopir' in form.changed_data:
                 sopir_nama = obj.idSopir.nama if obj.idSopir else 'Tidak ada'
@@ -272,7 +274,7 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
             else:
                 obj.keterangan_admin = f"{request.user.username} memperbarui data pesanan"
         else:
-            # This is a create operation
+        
             obj.keterangan_admin = f"{request.user.username} membuat pesanan baru via Admin"
         
         super().save_model(request, obj, form, change) 
@@ -280,19 +282,19 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
 
-        # Pengecekan Permission untuk Laporan Kustom
+       
         def has_report_permission(request):
-            # Allow access for Superusers and Pimpinan groups only
+          
             return (
                 request.user.is_superuser or 
                 request.user.groups.filter(name='Pimpinan').exists()
             )
 
-        # Wrapper function to check permissions before accessing reports
+    
         def protected_view(view_func):
             def wrapper(request, *args, **kwargs):
                 if not has_report_permission(request):
-                    # For unauthorized users (not in any of the allowed groups), redirect to admin index with error
+                 
                     from django.contrib import messages
                     messages.error(request, 'Anda tidak memiliki izin untuk mengakses laporan ini.')
                     from django.shortcuts import redirect
@@ -301,9 +303,9 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
             return wrapper
 
         report_urls = [
-            # Laporan Pemesanan & Pendapatan (Hanya Pimpinan & Superuser)
+          
             path('laporan/pemesanan-pendapatan/', self.admin_site.admin_view(protected_view(views.admin_laporan_pemesanan_pendapatan)), name='core_pemesanan_laporan'),
-            # Tambahkan pengecekan permission ke semua laporan PDF dan HTML lainnya
+          
             path('laporan/pelanggan/', self.admin_site.admin_view(protected_view(views.admin_laporan_pelanggan)), name='laporan-pelanggan'),
             path('laporan/produk/', self.admin_site.admin_view(protected_view(views.admin_laporan_produk)), name='laporan-produk'),
             path('laporan/sopir-kendaraan/', self.admin_site.admin_view(protected_view(views.admin_laporan_sopir_kendaraan)), name='laporan-sopir-kendaraan'),
@@ -319,17 +321,17 @@ class PemesananAdmin(ActionColumnMixin, admin.ModelAdmin):
         return report_urls + urls
 
     def response_change(self, request, obj):
-        # Check if status has changed to "Dibatalkan"
+       
         if obj.status == 'Dibatalkan':
-            # Get the original object from database
+         
             from .models import DetailPemesanan, Produk
             original_obj = self.model.objects.get(pk=obj.pk)
             
-            # If status was not "Dibatalkan" before, return stock
+         
             if original_obj.status != 'Dibatalkan':
-                # Loop through all order details
+             
                 for detail in obj.detailpemesanan_set.all():
-                    # Add quantity back to product stock
+                  
                     product = detail.idProduk
                     product.stok += detail.jumlah
                     product.save()

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,10 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-2*njlzd#f0ujtix9yl8f+b7e!5fgr166ng1lho*=2c-vq&26c%'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SEBELUM DEMO CLIENT: Ubah DEBUG menjadi False.
+# Untuk testing awal dengan teman kerja, diatur ke False agar sesuai standar deploy.
+DEBUG = False
 
-ALLOWED_HOSTS = []
+# Domain PythonAnywhere gratis untuk username: bluecode2004
+ALLOWED_HOSTS = ['bluecode2004.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -70,6 +73,7 @@ TEMPLATES = [
         },
     },
 ]
+
 WSGI_APPLICATION = 'viquam.wsgi.application'
 
 
@@ -114,14 +118,29 @@ USE_I18N = True
 
 USE_TZ = True
 
-import os
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# WAJIB UNTUK DEPLOY: Tempat mengumpulkan semua static files termasuk tema Jazzmin
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+# PENGATURAN KEAMANAN (Menjawab warning dari python manage.py check --deploy)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 Tahun
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -186,42 +205,31 @@ JAZZMIN_SETTINGS = {
     ],
 
     "topmenu_links": [
-        # Tautan ke Dashboard
         {
             'name': 'Home',
             'url': 'admin:index',
             'icon': 'fa fa-home',
         },
-        
-        # Laporan Pelanggan (Menggunakan URL Preview HTML)
         {
             'name': 'L. Pelanggan',
             'url': 'admin:laporan-pelanggan',
             'icon': 'fas fa-users',
         },
-        
-        # Laporan Produk & Stok
         {
             'name': 'L. Produk & Stok',
             'url': 'admin:laporan-produk',
             'icon': 'fas fa-box-open',
         },
-        
-        # Laporan Sopir & Kendaraan
         {
             'name': 'L. Sopir & Kendaraan',
             'url': 'admin:laporan-sopir-kendaraan',
             'icon': 'fas fa-truck-moving',
         },
-        
-        # Laporan Pemesanan & Pendapatan
         {
             'name': 'L. Pemesanan & Pendapatan',
             'url': 'custom_admin:core_pemesanan_laporan',
             'icon': 'fas fa-money-bill-wave',
         },
-        
-        # Laporan Feedback
         {
             'name': 'L. Feedback',
             'url': 'admin:laporan-feedback',
@@ -229,6 +237,7 @@ JAZZMIN_SETTINGS = {
         },
     ],
 }
+
 JAZZMIN_UI_TWEAKS = {
     "navbar_small_text": False,
     "footer_small_text": False,

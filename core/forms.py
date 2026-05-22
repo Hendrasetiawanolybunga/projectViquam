@@ -1,7 +1,8 @@
 from django import forms
+from decimal import Decimal
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.hashers import make_password
-from .models import Pelanggan, Pemesanan, Sopir, Provinsi, Kabupaten, Kecamatan, Kelurahan
+from .models import Pelanggan, Pemesanan, Sopir
 
 class SopirEditPengirimanForm(forms.ModelForm):
     keterangan = forms.CharField(
@@ -31,26 +32,6 @@ class SopirEditPengirimanForm(forms.ModelForm):
         ]
 
 class PelangganRegisterForm(forms.ModelForm):
-    # Chained dropdown fields for region selection
-    provinsi = forms.ModelChoiceField(
-        queryset=Provinsi.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-control bg-white text-dark border-dark', 'id': 'id_provinsi'}),
-        label='Provinsi'
-    )
-    kabupaten = forms.ModelChoiceField(
-        queryset=Kabupaten.objects.none(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-control bg-white text-dark border-dark', 'id': 'id_kabupaten'}),
-        label='Kabupaten/Kota'
-    )
-    kecamatan = forms.ModelChoiceField(
-        queryset=Kecamatan.objects.none(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-control bg-white text-dark border-dark', 'id': 'id_kecamatan'}),
-        label='Kecamatan'
-    )
-    
     password = forms.CharField(widget=forms.PasswordInput(attrs={
         'class': 'form-control bg-white text-dark border-dark',
         'placeholder': 'Masukkan password'
@@ -62,39 +43,15 @@ class PelangganRegisterForm(forms.ModelForm):
     
     class Meta:
         model = Pelanggan
-        fields = ['nama', 'noWa', 'idKelurahan', 'alamat', 'username', 'password']
+        fields = ['nama', 'noWa', 'alamat', 'latitude', 'longitude', 'username', 'password']
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Nama lengkap'}),
             'noWa': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Nomor WhatsApp'}),
-            'idKelurahan': forms.Select(attrs={'class': 'form-control bg-white text-dark border-dark', 'id': 'id_idKelurahan'}),
             'alamat': forms.Textarea(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Detail alamat (Blok/No Rumah)', 'rows': 2}),
             'username': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Username'}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from .models import Provinsi, Kabupaten, Kecamatan, Kelurahan
-        
-        # Initialize querysets
-        self.fields['provinsi'].queryset = Provinsi.objects.all()
-        self.fields['kabupaten'].queryset = Kabupaten.objects.none()
-        self.fields['kecamatan'].queryset = Kecamatan.objects.none()
-        self.fields['idKelurahan'].queryset = Kelurahan.objects.none()
-        
-        # If editing existing pelanggan with kelurahan
-        if self.instance.pk and self.instance.idKelurahan:
-            kelurahan = self.instance.idKelurahan
-            kecamatan = kelurahan.kecamatan
-            kabupaten = kecamatan.kabupaten
-            provinsi = kabupaten.provinsi
-            
-            self.fields['kabupaten'].queryset = Kabupaten.objects.filter(provinsi=provinsi)
-            self.fields['kecamatan'].queryset = Kecamatan.objects.filter(kabupaten=kabupaten)
-            self.fields['idKelurahan'].queryset = Kelurahan.objects.filter(kecamatan=kecamatan)
-            
-            self.fields['provinsi'].initial = provinsi
-            self.fields['kabupaten'].initial = kabupaten
-            self.fields['kecamatan'].initial = kecamatan
     
     def clean_confirm_password(self):
         password = self.cleaned_data.get('password')
@@ -124,12 +81,10 @@ class PelangganLoginForm(forms.Form):
 class PemesananCheckoutForm(forms.ModelForm):
     class Meta:
         model = Pemesanan
-        fields = ['idKelurahanPengiriman', 'alamatPengiriman', 'buktiBayar']
+        fields = ['latitude', 'longitude', 'alamatPengiriman', 'buktiBayar', 'jenisPembayaran']
         widgets = {
-            'idKelurahanPengiriman': forms.Select(attrs={
-                'class': 'form-control bg-white text-dark border-dark',
-                'id': 'id_idKelurahanPengiriman'
-            }),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
             'alamatPengiriman': forms.Textarea(attrs={
                 'class': 'form-control bg-white text-dark border-dark', 
                 'placeholder': 'Detail alamat pengiriman (Blok/No Rumah)',
@@ -137,18 +92,85 @@ class PemesananCheckoutForm(forms.ModelForm):
             }),
             'buktiBayar': forms.FileInput(attrs={
                 'class': 'form-control-file bg-white text-dark border-dark',
-                'required': True
+            }),
+            'jenisPembayaran': forms.Select(attrs={
+                'class': 'form-control bg-white text-dark border-dark',
             }),
         }
+    
+    def __init__(self, *args, **kwargs):
+        self.is_langganan = kwargs.pop('is_langganan', False)
+        super().__init__(*args, **kwargs)
+        
+        # Jika bukan pelanggan langganan, hide field pembayaran advanced
+        if not self.is_langganan:
+            self.fields['jenisPembayaran'].widget = forms.HiddenInput()
+            # Set required=False untuk general customers
+            self.fields['jenisPembayaran'].required = False
+            # Set default values for general customers
+            self.initial['jenisPembayaran'] = 'Transfer'
+        else:
+            # Pelanggan langganan bisa memilih jenis pembayaran
+            self.fields['jenisPembayaran'].required = True
+        
+        # Bukti bayar akan di-set required/not required di clean_buktiBayar berdasarkan jenis pembayaran
+    
+    def clean_buktiBayar(self):
+        buktiBayar = self.cleaned_data.get('buktiBayar')
+        jenisPembayaran = self.cleaned_data.get('jenisPembayaran')
+        
+        # Validasi bukti bayar berdasarkan jenis pembayaran
+        if self.is_langganan:
+            if jenisPembayaran == 'Transfer' and not buktiBayar:
+                raise forms.ValidationError('Bukti pembayaran wajib diupload untuk pembayaran Transfer.')
+            elif jenisPembayaran in ['COD', 'Piutang']:
+                # COD dan Piutang tidak memerlukan bukti bayar
+                pass
+        else:
+            # Pelanggan umum WAJIB upload bukti bayar
+            if not buktiBayar:
+                raise forms.ValidationError('Bukti pembayaran wajib diupload.')
+        
+        return buktiBayar
+    
+    def clean_nominalDibayar(self):
+        nominalDibayar = self.cleaned_data.get('nominalDibayar')
+        jenisPembayaran = self.cleaned_data.get('jenisPembayaran')
+        
+        if self.is_langganan and jenisPembayaran == 'DP':
+            if nominalDibayar is None or nominalDibayar <= 0:
+                raise forms.ValidationError('Nominal DP harus lebih dari 0 untuk pembayaran DP.')
+        
+        return nominalDibayar
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        if self.is_langganan:
+            jenisPembayaran = cleaned_data.get('jenisPembayaran')
+            
+            # Tidak ada validasi nominal untuk flow baru
+        else:
+            # Force consistent values for general customers
+            cleaned_data['jenisPembayaran'] = 'Transfer'
+            # Sync to instance to prevent model validation issues
+            self.instance.jenisPembayaran = 'Transfer'
+            self.instance.nominalDibayar = Decimal('0.00')
+            self.instance.sisaTagihan = Decimal('0.00')
+            self.instance.statusPembayaran = 'Lunas'
+        
+        return cleaned_data
 
 class PelangganUpdateForm(forms.ModelForm):
     class Meta:
         model = Pelanggan
-        fields = ['nama', 'noWa', 'alamat']
+        fields = ['nama', 'noWa', 'alamat', 'latitude', 'longitude']
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark'}),
             'noWa': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark'}),
             'alamat': forms.Textarea(attrs={'class': 'form-control bg-white text-dark border-dark', 'rows': 3}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
 
 class ChangePasswordForm(SetPasswordForm):

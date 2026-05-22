@@ -24,7 +24,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 from io import BytesIO
 
-from .models import Pelanggan, Sopir, Kendaraan, Produk, StokMasuk, Pemesanan, DetailPemesanan, Feedback, Provinsi, Kabupaten, Kecamatan, Kelurahan
+from .models import Pelanggan, Sopir, Kendaraan, Produk, StokMasuk, Pemesanan, DetailPemesanan, Feedback
 from .forms import SopirEditPengirimanForm, PelangganRegisterForm, PelangganLoginForm, PemesananCheckoutForm, PelangganUpdateForm, ChangePasswordForm
 
 def get_indonesian_date():
@@ -1534,18 +1534,18 @@ def sopir_dashboard(request):
         messages.error(request, 'Silakan login terlebih dahulu.')
         return redirect('sopir-login')
     
-    # Validasi Dashboard (core/views.py - fungsi sopir_dashboard)
-    # Lakukan hal yang sama: Jika user bukan Superuser, filter pesanan_list WAJIB menggunakan idSopir_id=request.session['sopir_id']. Jangan biarkan sopir melihat tugas sopir lain.
-    
+    # Update logika: Wewenang baru sopir
     if request.user.is_superuser:
+        # Superuser bisa mengakses semua pesanan dengan status 'Dikirim'
         pesanan_list = Pemesanan.objects.filter(
             status='Dikirim'
-        ).select_related('idPelanggan', 'idSopir', 'idKelurahanPengiriman__idKecamatan__idKabupaten', 'idKelurahanPengiriman__idKecamatan', 'idKelurahanPengiriman').order_by('idKelurahanPengiriman__idKecamatan__idKabupaten__nama', 'idKelurahanPengiriman__idKecamatan__nama', 'idKelurahanPengiriman__nama', '-tanggalPemesanan')
+        ).select_related('idPelanggan', 'idSopir').order_by('-tanggalPemesanan')
             
         context = {
             'pesanan_list': pesanan_list,
             'user': request.user,
             'is_admin_view': True,  # Variabel kendali untuk template
+            'pesanan_json': '[]',  # No map for admin view
         }
             
         return render(request, 'sopir/dashboard.html', context)
@@ -1554,16 +1554,31 @@ def sopir_dashboard(request):
     sopir_id = request.session['sopir_id']
         
     # Get orders assigned to this sopir with status 'Dikirim'
-    # JIKA BUKAN Superuser (User Sopir Biasa): WAJIB hanya mengambil pesanan berdasarkan session
     pesanan_list = Pemesanan.objects.filter(
         status='Dikirim',
         idSopir_id=sopir_id
-    ).select_related('idPelanggan', 'idKelurahanPengiriman__idKecamatan__idKabupaten', 'idKelurahanPengiriman__idKecamatan', 'idKelurahanPengiriman').order_by('idKelurahanPengiriman__idKecamatan__idKabupaten__nama', 'idKelurahanPengiriman__idKecamatan__nama', 'idKelurahanPengiriman__nama', '-tanggalPemesanan')
+    ).select_related('idPelanggan', 'idSopir').order_by('-tanggalPemesanan')
+    
+    # Convert to list of dictionaries for Leaflet map
+    pesanan_data = []
+    for pesanan in pesanan_list:
+        pesanan_data.append({
+            'id': pesanan.idPemesanan,
+            'pelanggan_nama': pesanan.idPelanggan.nama,
+            'alamat': pesanan.alamatPengiriman,
+            'lat': float(pesanan.latitude) if pesanan.latitude else None,
+            'lng': float(pesanan.longitude) if pesanan.longitude else None,
+            'total': str(pesanan.total),
+        })
+    
+    import json
+    pesanan_json = json.dumps(pesanan_data)
     
     context = {
         'pesanan_list': pesanan_list,
         'user': request.user,
         'is_admin_view': False,  # Variabel kendali untuk template (regular Sopir)
+        'pesanan_json': pesanan_json,
     }
     
     return render(request, 'sopir/dashboard.html', context)
@@ -1746,6 +1761,7 @@ def pelanggan_login(request):
                     # ditandai sebagai dimodifikasi agar backend menyimpannya segera.
                     request.session['pelanggan_id'] = pelanggan.idPelanggan
                     request.session['pelanggan_nama'] = pelanggan.nama
+                    request.session['pelanggan_is_langganan'] = pelanggan.isLangganan
                     request.session.modified = True
 
                     messages.success(request, f'Selamat datang, {pelanggan.nama}!')
@@ -1768,6 +1784,8 @@ def pelanggan_logout(request):
         del request.session['pelanggan_id']
     if 'pelanggan_nama' in request.session:
         del request.session['pelanggan_nama']
+    if 'pelanggan_is_langganan' in request.session:
+        del request.session['pelanggan_is_langganan']
     if 'cart' in request.session:
         del request.session['cart']
     
@@ -1986,6 +2004,10 @@ def remove_from_keranjang(request, pk):
 @pelanggan_login_required
 def checkout_pemesanan(request):
     """Checkout process with transaction safety"""
+    # Get pelanggan early for context
+    pelanggan_id = request.session['pelanggan_id']
+    pelanggan = Pelanggan.objects.get(idPelanggan=pelanggan_id)
+    
     # Get cart from session
     keranjang = get_keranjang(request)
     
@@ -1994,59 +2016,115 @@ def checkout_pemesanan(request):
         messages.error(request, 'Keranjang belanja kosong.')
         return redirect('view_keranjang')
     
-    # Calculate totals
+    # Calculate totals using Decimal for consistency
+    from decimal import Decimal
     total_items = 0
-    total_price = 0
+    total_price = Decimal('0.00')
     cart_items = []
     
     for product_id, item in keranjang.items():
-        subtotal = item['harga'] * item['quantity']
+        # Convert to Decimal for safe calculation
+        harga_item = Decimal(str(item['harga']))
+        quantity_item = Decimal(str(item['quantity']))
+        subtotal = harga_item * quantity_item
         total_items += item['quantity']
         total_price += subtotal
         
         cart_items.append({
             'id': product_id,
             'nama': item['nama'],
-            'harga': item['harga'],
+            'harga': float(harga_item),
             'quantity': item['quantity'],
-            'subtotal': subtotal,
+            'subtotal': float(subtotal),
             'stok': item['stok'],
-            'satuan': item.get('satuan', 'Dus')  # <--- Tambahkan baris ini
+            'satuan': item.get('satuan', 'Dus')
         })
     
     if request.method == 'POST':
-        form = PemesananCheckoutForm(request.POST, request.FILES)
+        # Get pelanggan from session to determine customer type
+        pelanggan_id = request.session['pelanggan_id']
+        pelanggan = Pelanggan.objects.get(idPelanggan=pelanggan_id)
+        
+        # Initialize form with is_langganan parameter
+        form = PemesananCheckoutForm(request.POST, request.FILES, is_langganan=pelanggan.isLangganan)
+        
         if form.is_valid():
-            # Check if buktiBayar is required and provided
+            # Determine bukti bayar requirement based on customer type and payment method
             bukti_bayar = request.FILES.get('buktiBayar')
-            if not bukti_bayar:
-                messages.error(request, 'Bukti pembayaran wajib diunggah.')
-                return render(request, 'pelanggan/checkout.html', {
-                    'form': form,
-                    'cart_items': cart_items,
-                    'total_items': total_items,
-                    'total_price': total_price,
-                })
+            jenis_pembayaran = form.cleaned_data.get('jenisPembayaran', 'Transfer')
+            
+            # Validasi bukti bayar berdasarkan tipe pelanggan dan metode pembayaran
+            if pelanggan.isLangganan:
+                # Pelanggan langganan
+                if jenis_pembayaran == 'Transfer' and not bukti_bayar:
+                    messages.error(request, 'Bukti pembayaran wajib diunggah untuk Transfer.')
+                    return render(request, 'pelanggan/checkout.html', {
+                        'form': form,
+                        'cart_items': cart_items,
+                        'total_items': total_items,
+                        'total_price': total_price,
+                        'is_langganan': pelanggan.isLangganan,
+                    })
+            else:
+                # Pelanggan umum - WAJIB bukti bayar
+                if not bukti_bayar:
+                    messages.error(request, 'Bukti pembayaran wajib diunggah.')
+                    return render(request, 'pelanggan/checkout.html', {
+                        'form': form,
+                        'cart_items': cart_items,
+                        'total_items': total_items,
+                        'total_price': total_price,
+                        'is_langganan': pelanggan.isLangganan,
+                    })
             
             # Use atomic transaction to ensure data consistency
             with transaction.atomic():
-                # Get pelanggan from session
-                pelanggan_id = request.session['pelanggan_id']
-                pelanggan = Pelanggan.objects.get(idPelanggan=pelanggan_id)
+                # Create new pemesanan with latitude and longitude
+                latitude = form.cleaned_data.get('latitude')
+                longitude = form.cleaned_data.get('longitude')
                 
-                # Create new pemesanan
-                id_kelurahan_pengiriman = form.cleaned_data.get('idKelurahanPengiriman')
-                if not id_kelurahan_pengiriman:
-                    # If idKelurahanPengiriman is empty, use pelanggan's idKelurahan
-                    id_kelurahan_pengiriman = pelanggan.idKelurahan
+                # Determine payment fields based on customer type
+                if pelanggan.isLangganan:
+                    # Pelanggan langganan - use form data
+                    jenis_pembayaran = form.cleaned_data['jenisPembayaran']
+                    
+                    # Calculate status pembayaran and sisa tagihan based on payment method
+                    if jenis_pembayaran == 'Transfer':
+                        status_pembayaran = 'Lunas'
+                        nominal_dibayar = total_price
+                        sisa_tagihan = Decimal('0.00')
+                        jatuh_tempo = None
+                    elif jenis_pembayaran == 'COD':
+                        status_pembayaran = 'Belum Bayar'
+                        nominal_dibayar = Decimal('0.00')
+                        sisa_tagihan = total_price
+                        jatuh_tempo = None
+                    elif jenis_pembayaran == 'Piutang':
+                        status_pembayaran = 'Belum Bayar'
+                        nominal_dibayar = Decimal('0.00')
+                        sisa_tagihan = total_price
+                        jatuh_tempo = None  # Will be set by admin later
+                else:
+                    # Pelanggan umum - default to Transfer/Lunas
+                    jenis_pembayaran = 'Transfer'
+                    status_pembayaran = 'Lunas'
+                    nominal_dibayar = total_price
+                    sisa_tagihan = Decimal('0.00')
+                    jatuh_tempo = None
                 
                 pemesanan = Pemesanan.objects.create(
                     idPelanggan=pelanggan,
-                    idKelurahanPengiriman=id_kelurahan_pengiriman,
+                    latitude=latitude,
+                    longitude=longitude,
                     alamatPengiriman=form.cleaned_data['alamatPengiriman'],
                     total=total_price,
-                    buktiBayar=bukti_bayar,
-                    status='Diproses'
+                    buktiBayar=bukti_bayar if bukti_bayar else None,
+                    status='Diproses',
+                    jenisPembayaran=jenis_pembayaran,
+                    statusPembayaran=status_pembayaran,
+                    nominalDibayar=nominal_dibayar,
+                    sisaTagihan=sisa_tagihan,
+                    jatuhTempo=jatuh_tempo
                 )
                 
                 # Create detail pemesanan for each item in cart
@@ -2073,18 +2151,39 @@ def checkout_pemesanan(request):
                 messages.success(request, 'Pesanan berhasil dibuat!')
                 return redirect('riwayat_pesanan')
         else:
-            messages.error(request, 'Terjadi kesalahan pada form. Silakan periksa kembali.')
+            # Format form errors into user-friendly messages
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == 'buktiBayar':
+                        error_messages.append('Bukti pembayaran wajib diupload.')
+                    elif field == 'jenisPembayaran':
+                        error_messages.append(error)
+                    elif field == 'nominalDibayar':
+                        error_messages.append(error)
+                    elif field == 'jatuhTempo':
+                        error_messages.append(error)
+                    else:
+                        error_messages.append(error)
+            
+            # Remove duplicates and join
+            error_messages = list(dict.fromkeys(error_messages))
+            messages.error(request, ' '.join(error_messages))
     else:
         # Pre-fill address with pelanggan's address
         pelanggan_id = request.session['pelanggan_id']
         pelanggan = Pelanggan.objects.get(idPelanggan=pelanggan_id)
-        form = PemesananCheckoutForm(initial={'alamatPengiriman': pelanggan.alamat})
+        initial_data = {'alamatPengiriman': pelanggan.alamat}
+        
+        # Pass is_langganan to form
+        form = PemesananCheckoutForm(initial=initial_data, is_langganan=pelanggan.isLangganan)
     
     context = {
         'form': form,
         'cart_items': cart_items,
         'total_items': total_items,
         'total_price': total_price,
+        'is_langganan': pelanggan.isLangganan,  # Context untuk template checkout
     }
     
     return render(request, 'pelanggan/checkout.html', context)
@@ -2240,22 +2339,4 @@ def kirim_feedback(request):
     return redirect('landing')
 
 
-def get_kabupaten(request):
-    """Load kabupaten based on provinsi ID"""
-    provinsi_id = request.GET.get('provinsi_id')
-    kabupatens = Kabupaten.objects.filter(idProvinsi_id=provinsi_id).order_by('nama')
-    return JsonResponse(list(kabupatens.values('idKabupaten', 'nama')), safe=False)
-
-
-def get_kecamatan(request):
-    """Load kecamatan based on kabupaten ID"""
-    kabupaten_id = request.GET.get('kabupaten_id')
-    kecamatans = Kecamatan.objects.filter(idKabupaten_id=kabupaten_id).order_by('nama')
-    return JsonResponse(list(kecamatans.values('idKecamatan', 'nama')), safe=False)
-
-
-def get_kelurahan(request):
-    """Load kelurahan based on kecamatan ID"""
-    kecamatan_id = request.GET.get('kecamatan_id')
-    kelurahans = Kelurahan.objects.filter(idKecamatan_id=kecamatan_id).order_by('nama')
-    return JsonResponse(list(kelurahans.values('idKelurahan', 'nama')), safe=False)
+# Feedback submission and landing page redirection handled here

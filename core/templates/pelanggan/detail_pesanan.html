@@ -155,7 +155,7 @@
                 </div>
             </div>
 
-            <div class="mb-2">
+            <div class="mb-3">
                 <div class="info-label">Total Pembayaran</div>
                 <div class="info-value text-success">
                     Rp {{ pesanan.total|intcomma }}
@@ -163,7 +163,7 @@
             </div>
 
             <div class="mb-3">
-                <div class="info-label">Status</div>
+                <div class="info-label">Status Pesanan</div>
                 {% if pesanan.status == 'Diproses' %}
                     <span class="badge bg-warning text-dark badge-status">{{ pesanan.status }}</span>
                 {% elif pesanan.status == 'Dikirim' %}
@@ -176,6 +176,54 @@
                     <span class="badge bg-secondary badge-status">{{ pesanan.status }}</span>
                 {% endif %}
             </div>
+
+            <hr>
+
+            <div class="mb-3 section-title">
+                <i class="fas fa-wallet me-2"></i>Informasi Pembayaran
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Jenis Pembayaran</div>
+                <div class="info-value">{{ pesanan.jenisPembayaran }}</div>
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Status Pembayaran</div>
+                <div>
+                    {% if pesanan.jenisPembayaran == 'Transfer' %}
+                        <span class="badge bg-success badge-status">{{ pesanan.statusPembayaran }}</span>
+                    {% elif pesanan.jenisPembayaran == 'COD' %}
+                        <span class="badge bg-danger badge-status">{{ pesanan.statusPembayaran }}</span>
+                    {% elif pesanan.jenisPembayaran == 'Piutang' %}
+                        <span class="badge bg-danger badge-status">{{ pesanan.statusPembayaran }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Nominal Dibayar</div>
+                <div class="info-value">Rp {{ pesanan.nominalDibayar|intcomma }}</div>
+            </div>
+
+            <div class="mb-2">
+                <div class="info-label">Sisa Tagihan</div>
+                <div class="info-value {% if pesanan.sisaTagihan > 0 %}text-danger{% else %}text-success{% endif %}">
+                    Rp {{ pesanan.sisaTagihan|intcomma }}
+                </div>
+            </div>
+
+            {% if pesanan.jatuhTempo %}
+            <div class="mb-2">
+                <div class="info-label">Jatuh Tempo</div>
+                <div class="info-value">{{ pesanan.jatuhTempo|date:"d M Y" }}</div>
+            </div>
+            {% elif pesanan.jenisPembayaran == 'Piutang' %}
+            <div class="mb-2">
+                <div class="info-label">Jatuh Tempo</div>
+                <div class="info-value text-warning small"><i class="fas fa-info-circle me-1"></i>Admin akan set tanggal jatuh tempo, harap secara berkala mengecek riwayat pesanan anda.</div>
+            </div>
+            {% endif %}
 
             <hr>
 
