@@ -1,0 +1,140 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+{% load humanize %}
+
+<!-- KPI CARDS ROW 1 -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#e8f4fd;">
+                    <i class="fas fa-money-bill-wave" style="color:#3b9ede;"></i>
+                </div>
+                <span class="stat-label">Pendapatan Bulan Ini</span>
+            </div>
+            <div class="stat-value">Rp {{ pendapatan_bulan_ini|default:0|intcomma }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#f0fdf4;">
+                    <i class="fas fa-chart-bar" style="color:#22c55e;"></i>
+                </div>
+                <span class="stat-label">Total Pendapatan</span>
+            </div>
+            <div class="stat-value">Rp {{ total_pendapatan|default:0|intcomma }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#fef9ec;">
+                    <i class="fas fa-check-circle" style="color:#f59e0b;"></i>
+                </div>
+                <span class="stat-label">Transaksi Selesai (Bulan Ini)</span>
+            </div>
+            <div class="stat-value">{{ transaksi_selesai_bulan_ini|default:0 }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#fdf2f8;">
+                    <i class="fas fa-truck" style="color:#a855f7;"></i>
+                </div>
+                <span class="stat-label">Pengiriman Aktif</span>
+            </div>
+            <div class="stat-value">{{ total_pengiriman_aktif|default:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS ROW 2 -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#fff1f2;">
+                    <i class="fas fa-clock" style="color:#ef4444;"></i>
+                </div>
+                <span class="stat-label">Pesanan Perlu Perhatian</span>
+            </div>
+            <div class="stat-value">{{ pesanan_perlu_perhatian|default:0 }}</div>
+            <div class="stat-label mt-1">Diproses &gt; 24 jam</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#f0f9ff;">
+                    <i class="fas fa-spinner" style="color:#0ea5e9;"></i>
+                </div>
+                <span class="stat-label">Pesanan Diproses</span>
+            </div>
+            <div class="stat-value">{{ total_pesanan_diproses|default:0 }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#fff7ed;">
+                    <i class="fas fa-box" style="color:#f97316;"></i>
+                </div>
+                <span class="stat-label">Produk Stok Habis</span>
+            </div>
+            <div class="stat-value">{{ produk_stok_habis|default:0 }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon" style="background:#f0fdf4;">
+                    <i class="fas fa-check-double" style="color:#16a34a;"></i>
+                </div>
+                <span class="stat-label">Total Transaksi Selesai</span>
+            </div>
+            <div class="stat-value">{{ total_transaksi_selesai|default:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- FEEDBACK TERBARU -->
+<div class="data-table">
+    <div class="data-table-header">
+        <h6><i class="fas fa-comment-dots me-2" style="color:#3b9ede;"></i>Feedback Terbaru Pelanggan</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Pelanggan</th>
+                    <th>Feedback</th>
+                    <th>Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fb in feedback_terbaru %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ fb.idPelanggan.nama }}</td>
+                    <td>{{ fb.isi|truncatechars:100 }}</td>
+                    <td>{{ fb.tanggal|date:"d M Y, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">Belum ada feedback.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

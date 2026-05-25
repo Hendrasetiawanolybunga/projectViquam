@@ -1,0 +1,85 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% load humanize %}
+
+{% block title %}Pelanggan — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Data Pelanggan{% endblock %}
+
+{% block content %}
+
+<div class="data-table">
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <form method="get" action="">
+            <div class="row g-2 align-items-end">
+                <div class="col-8 col-md-3">
+                    <label class="form-label mb-1" style="font-size:.72rem; font-weight:600; color:#374151;">Tipe Pelanggan</label>
+                    <select name="tipe" class="form-select">
+                        <option value="" {% if not filter_tipe %}selected{% endif %}>Semua</option>
+                        <option value="langganan" {% if filter_tipe == 'langganan' %}selected{% endif %}>Langganan</option>
+                        <option value="umum" {% if filter_tipe == 'umum' %}selected{% endif %}>Umum</option>
+                    </select>
+                </div>
+                <div class="col-4 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn-filter btn">
+                        <i class="fas fa-filter me-1"></i>Terapkan
+                    </button>
+                    <a href="{% url 'pimpinan_pelanggan' %}" class="btn-reset btn">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABLE HEADER -->
+    <div class="data-table-header">
+        <h6><i class="fas fa-users me-2" style="color:#3b9ede;"></i>Daftar Pelanggan</h6>
+        <span class="badge" style="background:#e8f4fd; color:#3b9ede; font-size:.72rem;">
+            {{ pelanggan_list|length }} pelanggan
+        </span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama</th>
+                    <th>Username</th>
+                    <th>No. WhatsApp</th>
+                    <th>Alamat</th>
+                    <th>Tipe</th>
+                    <th>NPWP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pl in pelanggan_list %}
+                <tr>
+                    <td style="font-size:.72rem; color:#94a3b8;">{{ pl.idPelanggan }}</td>
+                    <td style="font-weight:600; color:#0b1d28;">{{ pl.nama }}</td>
+                    <td style="font-size:.78rem; color:#64748b;">{{ pl.username }}</td>
+                    <td>{{ pl.noWa }}</td>
+                    <td style="max-width:200px; white-space:normal; font-size:.78rem;">{{ pl.alamat }}</td>
+                    <td>
+                        {% if pl.isLangganan %}
+                            <span class="badge-status" style="background:#fef9c3; color:#ca8a04;">
+                                <i class="fas fa-crown me-1" style="font-size:.6rem;"></i>Langganan
+                            </span>
+                        {% else %}
+                            <span class="badge-status" style="background:#f1f5f9; color:#64748b;">Umum</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:.78rem; color:#64748b;">{{ pl.npwp|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Tidak ada data pelanggan.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

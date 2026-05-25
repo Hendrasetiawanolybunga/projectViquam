@@ -1,0 +1,86 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% load humanize %}
+
+{% block title %}Sopir & Kendaraan — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Sopir & Kendaraan{% endblock %}
+
+{% block content %}
+
+<div class="data-table">
+    <div class="data-table-header">
+        <h6><i class="fas fa-truck me-2" style="color:#3b9ede;"></i>Daftar Sopir & Kendaraan</h6>
+        <span class="badge" style="background:#e8f4fd; color:#3b9ede; font-size:.72rem;">
+            {{ sopir_list|length }} sopir
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama Sopir</th>
+                    <th>No. HP</th>
+                    <th>Username</th>
+                    <th>Kendaraan</th>
+                    <th>Nomor Plat</th>
+                    <th>Jenis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sopir in sopir_list %}
+                    {% with kendaraan_list=sopir.kendaraan_set.all %}
+                    {% if kendaraan_list %}
+                        {% for kendaraan in kendaraan_list %}
+                        <tr>
+                            {% if forloop.first %}
+                            <td rowspan="{{ kendaraan_list|length }}" style="vertical-align:middle;">
+                                {{ forloop.parentloop.counter }}
+                            </td>
+                            <td rowspan="{{ kendaraan_list|length }}" style="vertical-align:middle; font-weight:600; color:#0b1d28;">
+                                {{ sopir.nama }}
+                            </td>
+                            <td rowspan="{{ kendaraan_list|length }}" style="vertical-align:middle;">
+                                {{ sopir.noHp }}
+                            </td>
+                            <td rowspan="{{ kendaraan_list|length }}" style="vertical-align:middle; font-size:.78rem; color:#64748b;">
+                                {{ sopir.username }}
+                            </td>
+                            {% endif %}
+                            <td>{{ kendaraan.nama }}</td>
+                            <td>
+                                <span class="badge-status" style="background:#f1f5f9; color:#374151; font-family:monospace;">
+                                    {{ kendaraan.nomorPlat }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if kendaraan.jenis == 'Roda 6' %}
+                                    <span class="badge-status" style="background:#dbeafe; color:#2563eb;">Roda 6</span>
+                                {% else %}
+                                    <span class="badge-status" style="background:#f0fdf4; color:#16a34a;">Roda 4</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td style="font-weight:600; color:#0b1d28;">{{ sopir.nama }}</td>
+                            <td>{{ sopir.noHp }}</td>
+                            <td style="font-size:.78rem; color:#64748b;">{{ sopir.username }}</td>
+                            <td colspan="3" class="text-muted" style="font-size:.78rem;">
+                                <i class="fas fa-info-circle me-1"></i>Belum ada kendaraan ditugaskan
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Belum ada data sopir.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

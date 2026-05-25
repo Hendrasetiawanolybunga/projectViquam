@@ -1,0 +1,281 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% load humanize %}
+
+{% block title %}Pemesanan — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Riwayat Pemesanan{% endblock %}
+
+{% block content %}
+
+<!-- FILTER BAR -->
+<div class="data-table mb-4">
+    <div class="filter-bar">
+        <form method="get" action="">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:.72rem; font-weight:600; color:#374151;">Status Pesanan</label>
+                    <select name="status" class="form-select">
+                        <option value="">Semua</option>
+                        <option value="Diproses" {% if filter_status == 'Diproses' %}selected{% endif %}>Diproses</option>
+                        <option value="Dikirim" {% if filter_status == 'Dikirim' %}selected{% endif %}>Dikirim</option>
+                        <option value="Selesai" {% if filter_status == 'Selesai' %}selected{% endif %}>Selesai</option>
+                        <option value="Dibatalkan" {% if filter_status == 'Dibatalkan' %}selected{% endif %}>Dibatalkan</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:.72rem; font-weight:600; color:#374151;">Status Bayar</label>
+                    <select name="statusPembayaran" class="form-select">
+                        <option value="">Semua</option>
+                        <option value="Belum Bayar" {% if filter_status_bayar == 'Belum Bayar' %}selected{% endif %}>Belum Bayar</option>
+                        <option value="DP" {% if filter_status_bayar == 'DP' %}selected{% endif %}>DP</option>
+                        <option value="Lunas" {% if filter_status_bayar == 'Lunas' %}selected{% endif %}>Lunas</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:.72rem; font-weight:600; color:#374151;">Dari Tanggal</label>
+                    <input type="date" name="tgl_mulai" class="form-control" value="{{ filter_tgl_mulai }}">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:.72rem; font-weight:600; color:#374151;">Sampai Tanggal</label>
+                    <input type="date" name="tgl_akhir" class="form-control" value="{{ filter_tgl_akhir }}">
+                </div>
+                <div class="col-12 col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn-filter btn">
+                        <i class="fas fa-filter me-1"></i>Terapkan
+                    </button>
+                    <a href="{% url 'pimpinan_pemesanan' %}" class="btn-reset btn">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABLE HEADER -->
+    <div class="data-table-header">
+        <h6><i class="fas fa-receipt me-2" style="color:#3b9ede;"></i>Hasil Pemesanan</h6>
+        <span class="badge" style="background:#e8f4fd; color:#3b9ede; font-size:.72rem;">
+            {{ pemesanan_list|length }} pesanan
+        </span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tanggal</th>
+                    <th>Pelanggan</th>
+                    <th>Total</th>
+                    <th>Jenis Bayar</th>
+                    <th>Status Bayar</th>
+                    <th>Sopir</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pemesanan_list %}
+                <tr>
+                    <td style="font-size:.72rem; color:#94a3b8;">{{ p.idPemesanan }}</td>
+                    <td style="white-space:nowrap;">{{ p.tanggalPemesanan|date:"d M Y" }}</td>
+                    <td>
+                        <div style="font-weight:600;">{{ p.idPelanggan.nama }}</div>
+                        <div style="font-size:.7rem; color:#94a3b8;">{{ p.idPelanggan.noWa }}</div>
+                    </td>
+                    <td style="font-weight:600; white-space:nowrap;">Rp {{ p.total|floatformat:0|intcomma }}</td>
+                    <td>{{ p.jenisPembayaran }}</td>
+                    <td>
+                        {% if p.statusPembayaran == 'Lunas' %}
+                            <span class="badge-status" style="background:#dcfce7; color:#16a34a;">Lunas</span>
+                        {% elif p.statusPembayaran == 'DP' %}
+                            <span class="badge-status" style="background:#fef9c3; color:#ca8a04;">DP</span>
+                        {% else %}
+                            <span class="badge-status" style="background:#fee2e2; color:#dc2626;">Belum Bayar</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.idSopir.nama|default:"—" }}</td>
+                    <td>
+                        {% if p.status == 'Selesai' %}
+                            <span class="badge-status" style="background:#dcfce7; color:#16a34a;">Selesai</span>
+                        {% elif p.status == 'Dikirim' %}
+                            <span class="badge-status" style="background:#dbeafe; color:#2563eb;">Dikirim</span>
+                        {% elif p.status == 'Diproses' %}
+                            <span class="badge-status" style="background:#fef9c3; color:#ca8a04;">Diproses</span>
+                        {% else %}
+                            <span class="badge-status" style="background:#f1f5f9; color:#64748b;">Dibatalkan</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-view-detail"
+                                data-id="{{ p.idPemesanan }}"
+                                style="background:#e8f4fd; color:#3b9ede; border:none; border-radius:8px; padding:5px 10px; font-size:.75rem;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">Tidak ada data pemesanan.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===== MODAL DETAIL (SATU, DI LUAR LOOP) ===== -->
+<div class="modal fade" id="modalDetailPemesanan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:14px; border:none;">
+            <div class="modal-header" style="background:#0b1d28; border-radius:14px 14px 0 0; padding:16px 20px;">
+                <h6 class="modal-title text-white mb-0">
+                    <i class="fas fa-receipt me-2" style="color:#3b9ede;"></i>
+                    Detail Pemesanan <span id="modal-id-label" style="color:#3b9ede;"></span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+
+                <!-- Loading state -->
+                <div id="modal-loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width:2rem; height:2rem;"></div>
+                    <div class="mt-2" style="font-size:.8rem; color:#64748b;">Memuat data...</div>
+                </div>
+
+                <!-- Content (hidden until loaded) -->
+                <div id="modal-body-content" style="display:none;">
+                    <div class="row g-0">
+                        <!-- Kolom kiri -->
+                        <div class="col-md-6 p-4" style="border-right:1px solid #f1f5f9;">
+                            <p class="mb-1" style="font-size:.68rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em;">Info Pesanan</p>
+                            <table class="table table-sm table-borderless mb-0" style="font-size:.8rem;">
+                                <tr><td style="color:#64748b; width:45%;">Tanggal</td><td id="modal-tanggal" style="font-weight:500;"></td></tr>
+                                <tr><td style="color:#64748b;">Pelanggan</td><td id="modal-pelanggan" style="font-weight:600;"></td></tr>
+                                <tr><td style="color:#64748b;">No. WA</td><td id="modal-nowa"></td></tr>
+                                <tr><td style="color:#64748b;">Alamat</td><td id="modal-alamat" style="white-space:normal;"></td></tr>
+                                <tr><td style="color:#64748b;">Sopir</td><td id="modal-sopir"></td></tr>
+                                <tr><td style="color:#64748b;">Status</td><td id="modal-status"></td></tr>
+                            </table>
+                        </div>
+                        <!-- Kolom kanan -->
+                        <div class="col-md-6 p-4">
+                            <p class="mb-1" style="font-size:.68rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em;">Info Pembayaran</p>
+                            <table class="table table-sm table-borderless mb-0" style="font-size:.8rem;">
+                                <tr><td style="color:#64748b; width:50%;">Total</td><td id="modal-total" style="font-weight:700; color:#0b1d28;"></td></tr>
+                                <tr><td style="color:#64748b;">Jenis Bayar</td><td id="modal-jenis-bayar"></td></tr>
+                                <tr><td style="color:#64748b;">Status Bayar</td><td id="modal-status-bayar"></td></tr>
+                                <tr><td style="color:#64748b;">Nominal Dibayar</td><td id="modal-nominal-dibayar"></td></tr>
+                                <tr><td style="color:#64748b;">Sisa Tagihan</td><td id="modal-sisa-tagihan"></td></tr>
+                                <tr><td style="color:#64748b;">Jatuh Tempo</td><td id="modal-jatuh-tempo"></td></tr>
+                            </table>
+
+                            <hr style="border-color:#f1f5f9; margin:12px 0;">
+
+                            <p class="mb-1" style="font-size:.68rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em;">Log Admin</p>
+                            <table class="table table-sm table-borderless mb-0" style="font-size:.8rem;">
+                                <tr><td style="color:#64748b; width:50%;">Diperbarui Oleh</td><td id="modal-updated-by"></td></tr>
+                                <tr><td style="color:#64748b;">Waktu Update</td><td id="modal-last-updated"></td></tr>
+                            </table>
+                            <div style="margin-top:8px;">
+                                <p style="font-size:.68rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Keterangan Admin</p>
+                                <div id="modal-keterangan-admin"
+                                     style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; font-size:.78rem; color:#374151; min-height:40px; white-space:pre-wrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error state -->
+                <div id="modal-error" style="display:none;" class="text-center py-4">
+                    <i class="fas fa-exclamation-circle text-danger" style="font-size:1.5rem;"></i>
+                    <div class="mt-2" style="font-size:.8rem; color:#dc2626;">Gagal memuat data. Coba lagi.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const AJAX_URL_BASE = '/pimpinan/pemesanan/';
+
+    // Status badge helper
+    function statusBadge(status) {
+        const map = {
+            'Selesai'   : 'background:#dcfce7; color:#16a34a;',
+            'Dikirim'   : 'background:#dbeafe; color:#2563eb;',
+            'Diproses'  : 'background:#fef9c3; color:#ca8a04;',
+            'Dibatalkan': 'background:#f1f5f9; color:#64748b;',
+            'Lunas'     : 'background:#dcfce7; color:#16a34a;',
+            'DP'        : 'background:#fef9c3; color:#ca8a04;',
+            'Belum Bayar': 'background:#fee2e2; color:#dc2626;',
+        };
+        const style = map[status] || 'background:#f1f5f9; color:#374151;';
+        return `<span style="font-size:.72rem; padding:3px 10px; border-radius:20px; font-weight:600; ${style}">${status}</span>`;
+    }
+
+    function setText(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
+    function setHTML(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = val;
+    }
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-view-detail');
+        if (!btn) return;
+
+        const id = btn.dataset.id;
+        const modalEl = document.getElementById('modalDetailPemesanan');
+        const modal = new bootstrap.Modal(modalEl);
+
+        // Reset state
+        document.getElementById('modal-loading').style.display = 'block';
+        document.getElementById('modal-body-content').style.display = 'none';
+        document.getElementById('modal-error').style.display = 'none';
+        document.getElementById('modal-id-label').textContent = '#' + id;
+
+        modal.show();
+
+        fetch(`${AJAX_URL_BASE}${id}/detail/`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Network error');
+            return res.json();
+        })
+        .then(d => {
+            setText('modal-tanggal', d.tanggal);
+            setText('modal-pelanggan', d.pelanggan);
+            setText('modal-nowa', d.noWa);
+            setText('modal-alamat', d.alamat);
+            setText('modal-sopir', d.sopir);
+            setHTML('modal-status', statusBadge(d.status));
+            setText('modal-total', d.total);
+            setText('modal-jenis-bayar', d.jenisPembayaran);
+            setHTML('modal-status-bayar', statusBadge(d.statusPembayaran));
+            setText('modal-nominal-dibayar', d.nominalDibayar);
+            setText('modal-sisa-tagihan', d.sisaTagihan);
+            setText('modal-jatuh-tempo', d.jatuhTempo);
+            setText('modal-updated-by', d.updatedBy);
+            setText('modal-last-updated', d.lastUpdated);
+            setText('modal-keterangan-admin', d.keteranganAdmin);
+
+            document.getElementById('modal-loading').style.display = 'none';
+            document.getElementById('modal-body-content').style.display = 'block';
+        })
+        .catch(() => {
+            document.getElementById('modal-loading').style.display = 'none';
+            document.getElementById('modal-error').style.display = 'block';
+        });
+    });
+})();
+</script>
+{% endblock %}

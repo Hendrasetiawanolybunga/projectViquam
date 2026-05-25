@@ -34,4 +34,14 @@ urlpatterns = [
     path('riwayat/<int:pk>/batal/', views.batal_pesanan, name='batal_pesanan'),
     path('akun/', views.pelanggan_account, name='pelanggan_account'),
     path('akun/kirim-feedback/', views.kirim_feedback, name='kirim_feedback'),
+
+    # URL PIMPINAN
+    path('pimpinan/login/', views.pimpinan_login, name='pimpinan_login'),
+    path('pimpinan/logout/', views.pimpinan_logout, name='pimpinan_logout'),
+    path('pimpinan/dashboard/', views.pimpinan_dashboard, name='pimpinan_dashboard'),
+    path('pimpinan/produk/', views.pimpinan_produk_list, name='pimpinan_produk'),
+    path('pimpinan/pemesanan/', views.pimpinan_pemesanan_list, name='pimpinan_pemesanan'),
+    path('pimpinan/pemesanan/<int:id>/detail/', views.pimpinan_pemesanan_detail_ajax, name='pimpinan_pemesanan_detail_ajax'),
+    path('pimpinan/pelanggan/', views.pimpinan_pelanggan_list, name='pimpinan_pelanggan'),
+    path('pimpinan/sopir/', views.pimpinan_sopir_list, name='pimpinan_sopir'),
 ]

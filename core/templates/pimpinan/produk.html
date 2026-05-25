@@ -1,0 +1,70 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% load humanize %}
+
+{% block title %}Produk — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Data Produk{% endblock %}
+
+{% block content %}
+
+<div class="data-table">
+    <div class="data-table-header">
+        <h6><i class="fas fa-box-open me-2" style="color:#3b9ede;"></i>Daftar Produk</h6>
+        <span class="badge" style="background:#e8f4fd; color:#3b9ede; font-size:.72rem;">
+            {{ produk_list|length }} produk
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama Produk</th>
+                    <th>Ukuran Kemasan</th>
+                    <th>Satuan</th>
+                    <th>Harga / Satuan</th>
+                    <th>Stok</th>
+                    <th>Total Terjual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produk in produk_list %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <div style="font-weight:600; color:#0b1d28;">{{ produk.namaProduk }}</div>
+                        {% if produk.deskripsi %}
+                        <div style="font-size:.7rem; color:#94a3b8;">{{ produk.deskripsi|truncatechars:60 }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ produk.ukuranKemasan }}</td>
+                    <td>{{ produk.satuan }}</td>
+                    <td>Rp {{ produk.hargaPerDus|intcomma }}</td>
+                    <td>
+                        {% if produk.stok == 0 %}
+                            <span class="badge-status" style="background:#fee2e2; color:#dc2626;">Habis</span>
+                        {% elif produk.stok <= 10 %}
+                            <span class="badge-status" style="background:#fef9c3; color:#ca8a04;">
+                                {{ produk.stok }} {{ produk.satuan|lower }}
+                            </span>
+                        {% else %}
+                            <span class="badge-status" style="background:#dcfce7; color:#16a34a;">
+                                {{ produk.stok }} {{ produk.satuan|lower }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ produk.total_terjual|default:0 }}</strong>
+                        <span style="font-size:.72rem; color:#94a3b8;">{{ produk.satuan|lower }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Tidak ada data produk.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

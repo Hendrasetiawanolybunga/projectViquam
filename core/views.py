@@ -2340,3 +2340,171 @@ def kirim_feedback(request):
 
 
 # Feedback submission and landing page redirection handled here
+
+
+# =============================================================================
+# PORTAL PIMPINAN — Decorator & Views (READ-ONLY)
+# =============================================================================
+
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login as auth_login, logout as auth_logout
+
+
+def pimpinan_required(view_func):
+    """Decorator: user harus authenticated DAN tergabung dalam grup 'Pimpinan'."""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated or \
+           not request.user.groups.filter(name='Pimpinan').exists():
+            messages.error(request, 'Akses ditolak. Silakan login sebagai Pimpinan.')
+            return redirect('pimpinan_login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
+def pimpinan_login(request):
+    """Login khusus Pimpinan menggunakan Django AuthenticationForm."""
+    if request.user.is_authenticated and \
+       request.user.groups.filter(name='Pimpinan').exists():
+        return redirect('pimpinan_dashboard')
+
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if not user.groups.filter(name='Pimpinan').exists():
+                messages.error(request, 'Akses ditolak, Anda bukan Pimpinan.')
+            else:
+                auth_login(request, user)
+                return redirect('pimpinan_dashboard')
+        else:
+            messages.error(request, 'Username atau password salah.')
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'pimpinan/login.html', {'form': form})
+
+
+def pimpinan_logout(request):
+    """Logout Pimpinan dan redirect ke halaman login."""
+    auth_logout(request)
+    return redirect('pimpinan_login')
+
+
+@pimpinan_required
+def pimpinan_dashboard(request):
+    """Dashboard Pimpinan — statistik bisnis dari get_dashboard_context()."""
+    context = get_dashboard_context()
+    # Alias agar template dashboard pimpinan konsisten
+    context['total_pendapatan'] = context.get('total_pendapatan_keseluruhan', 0)
+    context['transaksi_selesai_bulan_ini'] = context.get('transaksi_selesai_keseluruhan', 0)
+    # Hitung pendapatan bulan ini secara terpisah
+    from django.utils import timezone
+    from django.db.models import Sum
+    from decimal import Decimal
+    now = timezone.now()
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if now.month == 12:
+        end_of_month = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        end_of_month = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    result = Pemesanan.objects.filter(
+        status='Selesai',
+        tanggalPemesanan__gte=start_of_month,
+        tanggalPemesanan__lt=end_of_month
+    ).aggregate(Sum('total'))['total__sum']
+    context['pendapatan_bulan_ini'] = result if result is not None else Decimal('0')
+    return render(request, 'pimpinan/dashboard.html', context)
+
+
+@pimpinan_required
+def pimpinan_produk_list(request):
+    """Daftar produk dengan total terjual via annotate (no N+1)."""
+    produk_list = Produk.objects.annotate(
+        total_terjual=Sum('detailpemesanan__jumlah')
+    ).order_by('namaProduk')
+    return render(request, 'pimpinan/produk.html', {'produk_list': produk_list})
+
+
+@pimpinan_required
+def pimpinan_pemesanan_list(request):
+    """Riwayat semua pemesanan dengan filter multi-parameter."""
+    qs = Pemesanan.objects.select_related(
+        'idPelanggan', 'idSopir'
+    ).order_by('-tanggalPemesanan')
+
+    status       = request.GET.get('status', '').strip()
+    status_bayar = request.GET.get('statusPembayaran', '').strip()
+    tgl_mulai    = request.GET.get('tgl_mulai', '').strip()
+    tgl_akhir    = request.GET.get('tgl_akhir', '').strip()
+
+    if status:
+        qs = qs.filter(status=status)
+    if status_bayar:
+        qs = qs.filter(statusPembayaran=status_bayar)
+    if tgl_mulai:
+        qs = qs.filter(tanggalPemesanan__date__gte=tgl_mulai)
+    if tgl_akhir:
+        qs = qs.filter(tanggalPemesanan__date__lte=tgl_akhir)
+
+    context = {
+        'pemesanan_list': qs,
+        'filter_status': status,
+        'filter_status_bayar': status_bayar,
+        'filter_tgl_mulai': tgl_mulai,
+        'filter_tgl_akhir': tgl_akhir,
+    }
+    return render(request, 'pimpinan/pemesanan.html', context)
+
+
+@pimpinan_required
+def pimpinan_pemesanan_detail_ajax(request, id):
+    """AJAX endpoint — kembalikan detail satu pemesanan sebagai JSON."""
+    try:
+        p = Pemesanan.objects.select_related(
+            'idPelanggan', 'idSopir', 'updated_by'
+        ).get(pk=id)
+    except Pemesanan.DoesNotExist:
+        return JsonResponse({'error': 'Tidak ditemukan'}, status=404)
+
+    data = {
+        'idPemesanan'     : p.idPemesanan,
+        'tanggal'         : p.tanggalPemesanan.strftime('%d %b %Y, %H:%M'),
+        'pelanggan'       : p.idPelanggan.nama,
+        'noWa'            : p.idPelanggan.noWa,
+        'alamat'          : p.alamatPengiriman,
+        'total'           : f"Rp {int(p.total):,}".replace(',', '.'),
+        'status'          : p.status,
+        'jenisPembayaran' : p.jenisPembayaran,
+        'statusPembayaran': p.statusPembayaran,
+        'nominalDibayar'  : f"Rp {int(p.nominalDibayar):,}".replace(',', '.'),
+        'sisaTagihan'     : f"Rp {int(p.sisaTagihan):,}".replace(',', '.'),
+        'jatuhTempo'      : p.jatuhTempo.strftime('%d %b %Y') if p.jatuhTempo else '—',
+        'sopir'           : p.idSopir.nama if p.idSopir else '—',
+        'updatedBy'       : p.updated_by.username if p.updated_by else '—',
+        'lastUpdated'     : p.last_updated.strftime('%d %b %Y, %H:%M'),
+        'keteranganAdmin' : p.keterangan_admin or '—',
+    }
+    return JsonResponse(data)
+
+
+@pimpinan_required
+def pimpinan_pelanggan_list(request):
+    """Daftar pelanggan dengan filter tipe (langganan / umum)."""
+    tipe = request.GET.get('tipe', '').strip()
+    qs = Pelanggan.objects.all().order_by('nama')
+    if tipe == 'langganan':
+        qs = qs.filter(isLangganan=True)
+    elif tipe == 'umum':
+        qs = qs.filter(isLangganan=False)
+    return render(request, 'pimpinan/pelanggan.html', {
+        'pelanggan_list': qs,
+        'filter_tipe': tipe,
+    })
+
+
+@pimpinan_required
+def pimpinan_sopir_list(request):
+    """Daftar sopir beserta kendaraan yang ditugaskan."""
+    sopir_list = Sopir.objects.prefetch_related('kendaraan_set').order_by('nama')
+    return render(request, 'pimpinan/sopir.html', {'sopir_list': sopir_list})

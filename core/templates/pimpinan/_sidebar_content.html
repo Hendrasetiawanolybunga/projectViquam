@@ -1,0 +1,38 @@
+<div class="sidebar-brand">
+    <div class="brand-title"><i class="fas fa-water me-2"></i>VIQUAM</div>
+    <div class="brand-sub">Portal Pimpinan</div>
+</div>
+
+<nav class="sidebar-nav">
+    <div class="nav-label">Menu Utama</div>
+    <a href="{% url 'pimpinan_dashboard' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_dashboard' %}active{% endif %}">
+        <i class="fas fa-chart-line"></i> Dashboard
+    </a>
+    <a href="{% url 'pimpinan_produk' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_produk' %}active{% endif %}">
+        <i class="fas fa-box-open"></i> Produk
+    </a>
+    <a href="{% url 'pimpinan_pemesanan' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_pemesanan' %}active{% endif %}">
+        <i class="fas fa-receipt"></i> Pemesanan
+    </a>
+    <a href="{% url 'pimpinan_pelanggan' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_pelanggan' %}active{% endif %}">
+        <i class="fas fa-users"></i> Pelanggan
+    </a>
+    <a href="{% url 'pimpinan_sopir' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_sopir' %}active{% endif %}">
+        <i class="fas fa-truck"></i> Sopir & Kendaraan
+    </a>
+</nav>
+
+<div class="sidebar-footer">
+    <div class="user-info">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        Pimpinan
+    </div>
+    <a href="{% url 'pimpinan_logout' %}" class="sidebar-link px-0" style="border-left:none;">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+</div>
