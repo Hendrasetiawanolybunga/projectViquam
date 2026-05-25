@@ -109,6 +109,11 @@ html {
     font-size: .8rem;
 }
 
+/* Form inside grid — treated as transparent wrapper */
+.product-actions form {
+    display: contents;
+}
+
 /* Center icon X & Y */
 .btn-icon {
     display: flex;
@@ -210,16 +215,15 @@ html {
                     <i class="fas fa-info-circle"></i>
                 </a>
 
-                <input type="number"
-                       class="form-control form-control-sm qty-input"
-                       value="1"
-                       min="1"
-                       max="{{ produk.stok }}">
-
-                <form method="post" action="/keranjang/add/{{ produk.idProduk }}/">
+                <form method="post" action="/keranjang/add/{{ produk.idProduk }}/" style="display: contents;">
                     {% csrf_token %}
-                    <input type="hidden" name="quantity" value="1">
-                    <button class="btn btn-sm btn-cart btn-icon w-100">
+                    <input type="number"
+                           class="form-control form-control-sm qty-input"
+                           name="quantity"
+                           value="1"
+                           min="1"
+                           max="{{ produk.stok }}">
+                    <button type="submit" class="btn btn-sm btn-cart btn-icon">
                         <i class="fas fa-cart-plus"></i>
                     </button>
                 </form>

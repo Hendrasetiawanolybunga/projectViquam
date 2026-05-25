@@ -2,7 +2,13 @@ from django import forms
 from decimal import Decimal
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.hashers import make_password
+from django.core.validators import RegexValidator
 from .models import Pelanggan, Pemesanan, Sopir
+
+phone_validator = RegexValidator(
+    regex=r'^\d+$',
+    message='Nomor WhatsApp hanya boleh berisi angka.'
+)
 
 class SopirEditPengirimanForm(forms.ModelForm):
     keterangan = forms.CharField(
@@ -40,13 +46,22 @@ class PelangganRegisterForm(forms.ModelForm):
         'class': 'form-control bg-white text-dark border-dark',
         'placeholder': 'Konfirmasi password'
     }))
+    noWa = forms.CharField(
+        validators=[phone_validator],
+        widget=forms.TextInput(attrs={
+            'class': 'form-control bg-white text-dark border-dark',
+            'placeholder': 'Nomor WhatsApp',
+            'pattern': '[0-9]+',
+            'inputmode': 'numeric'
+        })
+    )
     
     class Meta:
         model = Pelanggan
         fields = ['nama', 'noWa', 'alamat', 'latitude', 'longitude', 'username', 'password']
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Nama lengkap'}),
-            'noWa': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Nomor WhatsApp'}),
+            'noWa': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Nomor WhatsApp', 'pattern': '[0-9]+', 'inputmode': 'numeric'}),
             'alamat': forms.Textarea(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Detail alamat (Blok/No Rumah)', 'rows': 2}),
             'username': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark', 'placeholder': 'Username'}),
             'latitude': forms.HiddenInput(),
@@ -162,12 +177,20 @@ class PemesananCheckoutForm(forms.ModelForm):
         return cleaned_data
 
 class PelangganUpdateForm(forms.ModelForm):
+    noWa = forms.CharField(
+        validators=[phone_validator],
+        widget=forms.TextInput(attrs={
+            'class': 'form-control bg-white text-dark border-dark',
+            'pattern': '[0-9]+',
+            'inputmode': 'numeric'
+        })
+    )
+
     class Meta:
         model = Pelanggan
         fields = ['nama', 'noWa', 'alamat', 'latitude', 'longitude']
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark'}),
-            'noWa': forms.TextInput(attrs={'class': 'form-control bg-white text-dark border-dark'}),
             'alamat': forms.Textarea(attrs={'class': 'form-control bg-white text-dark border-dark', 'rows': 3}),
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
