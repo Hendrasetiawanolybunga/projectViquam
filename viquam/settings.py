@@ -18,10 +18,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Trik Otomatis: Cek apakah kode berjalan di server PythonAnywhere
 # PythonAnywhere selalu menyimpan nama user di environment variable 'USER'
-IS_PYTHONANYWHERE = 'bluecode2004' in os.environ.get('USER', '')
+# Trik Otomatis yang lebih tangguh: Cek berdasarkan jalur absolut folder
+IS_PYTHONANYWHERE = 'bluecode2004' in str(BASE_DIR)
 
 if IS_PYTHONANYWHERE:
-    # ─── PENGATURAN PRODUCTION (Sesuai check --deploy kemarin) ───
+    # ─── PENGATURAN PRODUCTION ───
     DEBUG = False
     ALLOWED_HOSTS = ['bluecode2004.pythonanywhere.com']
     
@@ -32,7 +33,7 @@ if IS_PYTHONANYWHERE:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 else:
-    # ─── PENGATURAN DEVELOPMENT (Lokal Komputer Anda) ───
+    # ─── PENGATURAN DEVELOPMENT (Lokal) ───
     DEBUG = True
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
