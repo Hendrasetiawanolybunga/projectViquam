@@ -16,20 +16,25 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Trik Otomatis: Cek apakah kode berjalan di server PythonAnywhere
+# PythonAnywhere selalu menyimpan nama user di environment variable 'USER'
+IS_PYTHONANYWHERE = 'bluecode2004' in os.environ.get('USER', '')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2*njlzd#f0ujtix9yl8f+b7e!5fgr166ng1lho*=2c-vq&26c%'
-
-# SEBELUM DEMO CLIENT: Ubah DEBUG menjadi False.
-# Untuk testing awal dengan teman kerja, diatur ke False agar sesuai standar deploy.
-DEBUG = False
-
-# Domain PythonAnywhere gratis untuk username: bluecode2004
-ALLOWED_HOSTS = ['bluecode2004.pythonanywhere.com', 'localhost', '127.0.0.1']
-
+if IS_PYTHONANYWHERE:
+    # ─── PENGATURAN PRODUCTION (Sesuai check --deploy kemarin) ───
+    DEBUG = False
+    ALLOWED_HOSTS = ['bluecode2004.pythonanywhere.com']
+    
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    # ─── PENGATURAN DEVELOPMENT (Lokal Komputer Anda) ───
+    DEBUG = True
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 
