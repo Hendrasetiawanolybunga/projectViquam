@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2*njlzd#f0ujtix9yl8f+b7e!5fgr166ng1lho*=2c-vq&26c%
 
 # SEBELUM DEMO CLIENT: Ubah DEBUG menjadi False.
 # Untuk testing awal dengan teman kerja, diatur ke False agar sesuai standar deploy.
-DEBUG = True
+DEBUG = False
 
 # Domain PythonAnywhere gratis untuk username: bluecode2004
 ALLOWED_HOSTS = ['bluecode2004.pythonanywhere.com', 'localhost', '127.0.0.1']
