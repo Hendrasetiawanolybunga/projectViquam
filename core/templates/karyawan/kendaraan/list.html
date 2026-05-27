@@ -1,0 +1,52 @@
+{% extends 'karyawan/base_karyawan.html' %}
+{% block title %}Kendaraan — Portal Karyawan VIQUAM{% endblock %}
+{% block page_title %}Manajemen Kendaraan{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <form method="get" class="d-flex gap-2" style="min-width:240px;">
+    <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Cari nama kendaraan…" style="border-radius:8px;">
+    <button type="submit" class="btn btn-sm" style="background:#3b9ede;color:#fff;border-radius:8px;"><i class="fas fa-search"></i></button>
+    {% if q %}<a href="{% url 'karyawan_kendaraan_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;">Reset</a>{% endif %}
+  </form>
+  <a href="{% url 'karyawan_kendaraan_create' %}" class="btn btn-sm" style="background:#0b1d28;color:#fff;border-radius:8px;padding:6px 16px;">
+    <i class="fas fa-plus me-1"></i> Tambah Kendaraan
+  </a>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert" style="border-radius:10px;font-size:.82rem;">
+  {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>{% endfor %}{% endif %}
+
+<div class="data-table">
+  <div class="data-table-header">
+    <h6><i class="fas fa-truck me-2" style="color:#3b9ede;"></i>Daftar Kendaraan</h6>
+    <span class="badge" style="background:#e8f4fd;color:#3b9ede;font-size:.72rem;">{{ page_obj.paginator.count }} kendaraan</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>#</th><th>Nomor Plat</th><th>Nama</th><th>Jenis</th><th>Sopir</th><th>Aksi</th></tr></thead>
+      <tbody>
+        {% for k in kendaraan_list %}
+        <tr>
+          <td style="font-size:.72rem;color:#94a3b8;">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+          <td style="font-weight:600;font-family:monospace;">{{ k.nomorPlat }}</td>
+          <td>{{ k.nama }}</td>
+          <td><span class="badge-status" style="background:#e8f4fd;color:#3b9ede;">{{ k.jenis }}</span></td>
+          <td>{{ k.idSopir.nama }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'karyawan_kendaraan_update' k.nomorPlat %}" class="btn btn-sm" title="Edit" style="background:#e8f4fd;color:#3b9ede;border:none;border-radius:7px;padding:4px 9px;"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'karyawan_kendaraan_delete' k.nomorPlat %}" class="btn btn-sm" title="Hapus" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:4px 9px;"><i class="fas fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada kendaraan. <a href="{% url 'karyawan_kendaraan_create' %}">Tambah sekarang</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

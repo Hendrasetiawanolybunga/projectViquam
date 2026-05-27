@@ -1,0 +1,67 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+
+{% block title %}Hapus Akun Staff — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Hapus Akun Staff{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-5">
+        <div class="data-table">
+            <div class="data-table-header" style="background:#fee2e2;">
+                <h6 style="color:#dc2626;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Konfirmasi Penghapusan
+                </h6>
+            </div>
+
+            <div class="p-4">
+                <p style="font-size:.88rem; color:#374151;">
+                    Anda akan menghapus akun berikut secara permanen:
+                </p>
+
+                <div class="p-3 mb-4"
+                     style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">
+                    <div style="font-size:.82rem; color:#64748b; margin-bottom:4px;">Username</div>
+                    <div style="font-weight:700; font-size:1rem; color:#0b1d28;">
+                        {{ target_user.username }}
+                    </div>
+                    {% if target_user.get_full_name %}
+                    <div style="font-size:.82rem; color:#64748b; margin-top:8px; margin-bottom:4px;">Nama</div>
+                    <div style="font-size:.88rem; color:#374151;">{{ target_user.get_full_name }}</div>
+                    {% endif %}
+                    {% if target_user.email %}
+                    <div style="font-size:.82rem; color:#64748b; margin-top:8px; margin-bottom:4px;">Email</div>
+                    <div style="font-size:.88rem; color:#374151;">{{ target_user.email }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-warning" style="font-size:.8rem; border-radius:8px;">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Tindakan ini tidak dapat dibatalkan.</strong>
+                    Pertimbangkan menonaktifkan akun (is_active = False) jika hanya ingin
+                    memblokir login sementara.
+                </div>
+
+                <!-- Form POST untuk konfirmasi delete (Django DeleteView membutuhkan POST) -->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'pimpinan_user_list' %}"
+                           class="btn btn-sm btn-outline-secondary"
+                           style="border-radius:8px; padding:7px 18px;">
+                            Batal
+                        </a>
+                        <button type="submit"
+                                class="btn btn-sm btn-danger"
+                                style="border-radius:8px; padding:7px 18px;">
+                            <i class="fas fa-trash me-1"></i> Ya, Hapus Akun
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

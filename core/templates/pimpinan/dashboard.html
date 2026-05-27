@@ -1,140 +1,260 @@
 {% extends 'pimpinan/base_pimpinan.html' %}
 {% load humanize %}
 
-{% block title %}Dashboard — Portal Pimpinan VIQUAM{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+{% block title %}Dashboard Monitoring — Portal Pimpinan{% endblock %}
+{% block page_title %}Dashboard Monitoring{% endblock %}
 
 {% block content %}
-{% load humanize %}
+<style>
+    /* Gradient Layout Styles */
+    .dashboard-banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 15px; padding: 20px 30px;
+        color: #fff; margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .banner-text h2 { margin: 0; font-weight: 700; letter-spacing: -0.5px; }
+    .banner-text p { margin: 0; opacity: 0.8; font-size: 0.9rem; }
 
-<!-- KPI CARDS ROW 1 -->
+    /* Metric Cards */
+    .metric-card {
+        border: none; border-radius: 14px; padding: 20px;
+        color: #fff; transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%; position: relative; overflow: hidden;
+        display: flex; flex-direction: column; justify-content: space-between;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-decoration: none !important;
+    }
+    .metric-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+    .metric-card i { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.15; }
+    .metric-value { font-size: 1.8rem; font-weight: 700; line-height: 1.2; margin-bottom: 5px; }
+    .metric-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
+    .metric-cta { font-size: 0.7rem; margin-top: 15px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+
+    .bg-gradient-danger  { background: linear-gradient(135deg, #f85032 0%, #e73827 100%); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); }
+    .bg-gradient-info    { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
+    .bg-gradient-dark    { background: linear-gradient(135deg, #232526 0%, #414345 100%); }
+    .bg-gradient-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+
+    /* Layout Containers */
+    .card-analysis {
+        background: #fff; border-radius: 12px; padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%;
+    }
+    .card-title-custom {
+        font-size: 0.9rem; font-weight: 700; color: #334155;
+        margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+    }
+</style>
+
+<!-- Baris 1: Top Banner -->
+<div class="dashboard-banner">
+    <div class="banner-text">
+        <h2>Dashboard Monitoring</h2>
+        <p>Laporan analisis performa bisnis dan operasional perusahaan.</p>
+    </div>
+    <div class="d-none d-md-block">
+        <i class="fas fa-crown fa-3x opacity-50"></i>
+    </div>
+</div>
+
+<!-- Baris 2: Metrik Utama (4 Card) -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#e8f4fd;">
-                    <i class="fas fa-money-bill-wave" style="color:#3b9ede;"></i>
-                </div>
-                <span class="stat-label">Pendapatan Bulan Ini</span>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'pimpinan_produk' %}" class="metric-card bg-gradient-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <div class="metric-value">{{ produk_stok_habis }}</div>
+                <div class="metric-label">Produk Stok Habis</div>
             </div>
-            <div class="stat-value">Rp {{ pendapatan_bulan_ini|default:0|intcomma }}</div>
+            <div class="metric-cta">Cek Inventaris <i class="fas fa-arrow-right"></i></div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'pimpinan_pemesanan' %}" class="metric-card bg-gradient-warning text-dark">
+            <i class="fas fa-receipt"></i>
+            <div>
+                <div class="metric-value">{{ total_pesanan_diproses }}</div>
+                <div class="metric-label">Pesanan Diproses</div>
+            </div>
+            <div class="metric-cta">Lihat Semua Pesanan <i class="fas fa-arrow-right"></i></div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'pimpinan_pemesanan' %}" class="metric-card bg-gradient-info">
+            <i class="fas fa-truck"></i>
+            <div>
+                <div class="metric-value">{{ total_pengiriman_aktif }}</div>
+                <div class="metric-label">Pengiriman Berjalan</div>
+            </div>
+            <div class="metric-cta">Lacak Pengiriman <i class="fas fa-arrow-right"></i></div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'pimpinan_pelanggan' %}" class="metric-card bg-gradient-dark">
+            <i class="fas fa-user-tie"></i>
+            <div>
+                <div class="metric-value">{{ total_pelanggan|default:"0" }}</div>
+                <div class="metric-label">Database Pelanggan</div>
+            </div>
+            <div class="metric-cta">Analisis Client <i class="fas fa-arrow-right"></i></div>
+        </a>
+    </div>
+</div>
+
+<!-- Baris 3: Analisis Pendapatan -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card-analysis">
+            <div class="card-title-custom">
+                <i class="fas fa-chart-area text-info"></i> Tren Pendapatan Bulanan
+            </div>
+            <canvas id="revenueChart" style="max-height: 250px;"></canvas>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#f0fdf4;">
-                    <i class="fas fa-chart-bar" style="color:#22c55e;"></i>
+    <div class="col-lg-4">
+        <div class="metric-card bg-gradient-success h-100">
+            <i class="fas fa-wallet"></i>
+            <div>
+                <div class="metric-label">Total Pendapatan (Keseluruhan)</div>
+                <div class="metric-value mt-2" style="font-size: 2.2rem;">
+                    Rp {{ total_pendapatan_keseluruhan|floatformat:0|intcomma }}
                 </div>
-                <span class="stat-label">Total Pendapatan</span>
+                <p class="small opacity-75 mt-2">Dihitung berdasarkan pesanan yang sudah berstatus "Selesai".</p>
             </div>
-            <div class="stat-value">Rp {{ total_pendapatan|default:0|intcomma }}</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#fef9ec;">
-                    <i class="fas fa-check-circle" style="color:#f59e0b;"></i>
-                </div>
-                <span class="stat-label">Transaksi Selesai (Bulan Ini)</span>
-            </div>
-            <div class="stat-value">{{ transaksi_selesai_bulan_ini|default:0 }}</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#fdf2f8;">
-                    <i class="fas fa-truck" style="color:#a855f7;"></i>
-                </div>
-                <span class="stat-label">Pengiriman Aktif</span>
-            </div>
-            <div class="stat-value">{{ total_pengiriman_aktif|default:0 }}</div>
         </div>
     </div>
 </div>
 
-<!-- KPI CARDS ROW 2 -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#fff1f2;">
-                    <i class="fas fa-clock" style="color:#ef4444;"></i>
-                </div>
-                <span class="stat-label">Pesanan Perlu Perhatian</span>
+<!-- Baris 4: Analisis Produk -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card-analysis">
+            <div class="card-title-custom">
+                <i class="fas fa-medal text-warning"></i> Statistik Penjualan per Produk (Horizontal bar)
             </div>
-            <div class="stat-value">{{ pesanan_perlu_perhatian|default:0 }}</div>
-            <div class="stat-label mt-1">Diproses &gt; 24 jam</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#f0f9ff;">
-                    <i class="fas fa-spinner" style="color:#0ea5e9;"></i>
-                </div>
-                <span class="stat-label">Pesanan Diproses</span>
-            </div>
-            <div class="stat-value">{{ total_pesanan_diproses|default:0 }}</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#fff7ed;">
-                    <i class="fas fa-box" style="color:#f97316;"></i>
-                </div>
-                <span class="stat-label">Produk Stok Habis</span>
-            </div>
-            <div class="stat-value">{{ produk_stok_habis|default:0 }}</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="stat-icon" style="background:#f0fdf4;">
-                    <i class="fas fa-check-double" style="color:#16a34a;"></i>
-                </div>
-                <span class="stat-label">Total Transaksi Selesai</span>
-            </div>
-            <div class="stat-value">{{ total_transaksi_selesai|default:0 }}</div>
+            <canvas id="productSalesChart" style="max-height: 350px;"></canvas>
         </div>
     </div>
 </div>
 
-<!-- FEEDBACK TERBARU -->
-<div class="data-table">
-    <div class="data-table-header">
-        <h6><i class="fas fa-comment-dots me-2" style="color:#3b9ede;"></i>Feedback Terbaru Pelanggan</h6>
-    </div>
-    <div class="table-responsive">
-        <table class="table mb-0">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Pelanggan</th>
-                    <th>Feedback</th>
-                    <th>Tanggal</th>
-                </tr>
-            </thead>
-            <tbody>
+<!-- Baris 5: Social & Quick Access -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card-analysis">
+            <div class="card-title-custom">
+                <i class="fas fa-star text-primary"></i> Suara Pelanggan (Feedback Terbaru)
+            </div>
+            <div class="list-group list-group-flush">
                 {% for fb in feedback_terbaru %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ fb.idPelanggan.nama }}</td>
-                    <td>{{ fb.isi|truncatechars:100 }}</td>
-                    <td>{{ fb.tanggal|date:"d M Y, H:i" }}</td>
-                </tr>
+                <div class="list-group-item px-0 bg-transparent border-0 mb-2">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-light text-dark">{{ fb.idPelanggan.nama }}</span>
+                        <span class="text-muted extra-small">{{ fb.tanggal|date:"d M Y" }}</span>
+                    </div>
+                    <div class="small fst-italic text-secondary border-start border-primary ps-2">
+                        "{{ fb.isi|truncatechars:100 }}"
+                    </div>
+                </div>
                 {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Belum ada feedback.</td>
-                </tr>
+                <p class="text-muted small">Belum ada feedback masuk.</p>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-analysis">
+            <div class="card-title-custom">
+                <i class="fas fa-layer-group text-danger"></i> Akses Cepat Menu Pimpinan
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="{% url 'pimpinan_pemesanan' %}" class="btn btn-outline-primary btn-sm w-100 py-3">
+                        <i class="fas fa-file-invoice-dollar d-block mb-1"></i> Dashboard Order
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'pimpinan_pelanggan' %}" class="btn btn-outline-info btn-sm w-100 py-3">
+                        <i class="fas fa-address-book d-block mb-1"></i> Direktori Pelanggan
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'pimpinan_karyawan_list' %}" class="btn btn-outline-secondary btn-sm w-100 py-3">
+                        <i class="fas fa-users-cog d-block mb-1"></i> Manajemen Staff
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'pimpinan_sopir' %}" class="btn btn-outline-warning btn-sm w-100 py-3">
+                        <i class="fas fa-id-card d-block mb-1"></i> Armada Sopir
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    // Revenue Chart (Line)
+    const revCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revCtx, {
+        type: 'line', // Tetap line untuk tren waktu
+        data: {
+            labels: {{ chart_labels_json|safe }},
+            datasets: [{
+                label: 'Pendapatan',
+                data: {{ chart_data_json|safe }},
+                borderColor: '#1e3c72',
+                backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#1e3c72'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+
+    // Product Sales Chart (Horizontal Bar)
+    const prodCtx = document.getElementById('productSalesChart').getContext('2d');
+    new Chart(prodCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ product_labels_json|safe }},
+            datasets: [{
+                label: 'Unit Terjual',
+                data: {{ product_sales_data_json|safe }},
+                backgroundColor: 'rgba(242, 153, 74, 0.85)',
+                borderRadius: 5,
+                barThickness: 15
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Konfigurasi Horisontal Bar Chart Sesuai Visual
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}

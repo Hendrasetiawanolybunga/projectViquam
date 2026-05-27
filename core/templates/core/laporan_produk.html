@@ -1,169 +1,89 @@
-{% extends "admin/base.html" %}
+{% extends "karyawan/base_karyawan.html" %}
+{% load humanize %}
 
-{% block title %}Laporan Produk & Stok{% endblock %}
-
-{% block extrahead %}
-<style>
-    .module {
-        max-width: 100% !important; 
-        width: 100% !important;
-    }
-    #content-main {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
-</style>
-{% endblock %}
+{% block title %}Laporan Produk & Stok — VIQUAM{% endblock %}
+{% block page_title %}Laporan Produk{% endblock %}
 
 {% block content %}
-<div class="module">
-    <h1>Laporan Produk & Stok</h1>
-    
-    <form method="get" id="filter-form">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="id_tgl_mulai">Tanggal Mulai:</label>
-                <input type="date" name="tgl_mulai" id="id_tgl_mulai" value="{{ tgl_mulai }}">
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-dark">Filter Inventori</h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="tgl_mulai" class="form-label small fw-bold">Tanggal Mulai</label>
+                <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control form-control-sm" value="{{ tgl_mulai }}">
             </div>
-            
-            <div class="form-group">
-                <label for="id_tgl_akhir">Tanggal Akhir:</label>
-                <input type="date" name="tgl_akhir" id="id_tgl_akhir" value="{{ tgl_akhir }}">
+            <div class="col-md-3">
+                <label for="tgl_akhir" class="form-label small fw-bold">Tanggal Akhir</label>
+                <input type="date" name="tgl_akhir" id="tgl_akhir" class="form-control form-control-sm" value="{{ tgl_akhir }}">
             </div>
-            
-            <div class="form-group">
-                <label for="id_filter_tipe">Filter Tipe:</label>
-                <select name="filter_tipe" id="id_filter_tipe">
-                    <option value="">-- Pilih Filter --</option>
+            <div class="col-md-3">
+                <label for="filter_tipe" class="form-label small fw-bold">Kategori Filter</label>
+                <select name="filter_tipe" id="filter_tipe" class="form-select form-select-sm">
+                    <option value="">-- Semua Produk --</option>
                     <option value="terlaris" {% if filter_tipe == 'terlaris' %}selected{% endif %}>Terlaris</option>
                     <option value="stok_menipis" {% if filter_tipe == 'stok_menipis' %}selected{% endif %}>Stok Menipis</option>
                 </select>
             </div>
-            
-            <div class="form-group">
-                <label for="id_batas_stok">Batas Stok (untuk filter stok menipis):</label>
-                <input type="number" name="batas_stok" id="id_batas_stok" value="{{ batas_stok|default:10 }}">
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search me-2"></i> Terapkan Filter
+                </button>
             </div>
-            
-            <div class="form-group">
-                <input type="submit" value="Filter Data" class="default">
-            </div>
-        </div>
-    </form>
-    
-    <div class="module">
-        <table id="result_list">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Produk</th>
-                    <th>Ukuran</th>
-                    <th>Harga</th>
-                    <th>Stok</th>
-                    <th>Terjual</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for produk in produk_list %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ produk.namaProduk }}</td>
-                    <td>{{ produk.ukuranKemasan }}</td>
-                    <td>{{ produk.hargaPerDus }}</td>
-                    <td>{{ produk.stok }}</td>
-                    <td>{% if produk.total_terjual is not None %}{{ produk.total_terjual }}{% else %}0{% endif %}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6">Tidak ada data produk</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="module footer">
-        <a href="{% url 'admin:laporan-produk-pdf' %}?{{ request.GET.urlencode }}" class="btn btn-primary" target="_blank">
-            <i class="fas fa-file-pdf"></i> Cetak PDF
-        </a>
+        </form>
     </div>
 </div>
 
-<style>
-.form-row {
-    display: flex;
-    gap: 15px;
-    align-items: end;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.form-group input[type="date"],
-.form-group input[type="number"],
-.form-group select {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-}
-
-.form-group input[type="submit"] {
-    height: fit-content;
-    align-self: flex-end;
-}
-
-#result_list {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#result_list th,
-#result_list td {
-    padding: 10px;
-    border: 1px solid #ddd;
-    text-align: left;
-}
-
-#result_list th {
-    background-color: #f5f5f5;
-    font-weight: bold;
-}
-
-.footer {
-    margin-top: 20px;
-    text-align: right;
-}
-
-.btn {
-    display: inline-block;
-    padding: 8px 16px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-}
-
-.btn-primary {
-    background-color: #dc3545;
-}
-
-.btn-primary:hover {
-    background-color: #c82333;
-}
-</style>
-{% endblock %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-dark text-uppercase small">Status Stok & Penjualan</h6>
+        <button type="button" onclick="window.print()" class="btn btn-danger btn-sm">
+            <i class="fas fa-print me-2"></i> Cetak Laporan
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: .85rem;">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">No</th>
+                        <th>Nama Produk</th>
+                        <th>Ukuran Kemasan</th>
+                        <th class="text-end">Harga/Dus</th>
+                        <th class="text-center">Sisa Stok</th>
+                        <th class="pe-4 text-end">Total Terjual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produk in produk_list %}
+                    <tr>
+                        <td class="ps-4 text-muted">{{ forloop.counter }}</td>
+                        <td class="fw-bold">{{ produk.namaProduk }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ produk.ukuranKemasan }}</span></td>
+                        <td class="text-end">Rp {{ produk.hargaPerDus|floatformat:0|intcomma }}</td>
+                        <td class="text-center">
+                            {% if produk.stok <= 10 %}
+                                <span class="text-danger fw-bold"><i class="fas fa-arrow-down me-1"></i> {{ produk.stok }}</span>
+                            {% else %}
+                                <span class="text-success">{{ produk.stok }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end fw-bold text-primary">
+                            {{ produk.total_terjual|default:0 }} <small class="text-muted fw-normal">Unit</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            Tidak ada data produk yang ditemukan.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

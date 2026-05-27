@@ -1,0 +1,86 @@
+<div class="sidebar-brand">
+    <div class="brand-title"><i class="fas fa-water me-2"></i>VIQUAM</div>
+    <div class="brand-sub">Portal Karyawan</div>
+</div>
+
+<nav class="sidebar-nav">
+    <div class="nav-label">Menu Utama</div>
+    <a href="{% url 'karyawan_dashboard' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'karyawan_dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+
+    <div class="nav-label mt-2">Master Data</div>
+    <a href="{% url 'karyawan_produk_list' %}"
+       class="sidebar-link {% if 'karyawan_produk' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-box-open"></i> Produk
+    </a>
+    <a href="{% url 'karyawan_stok_list' %}"
+       class="sidebar-link {% if 'karyawan_stok' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-warehouse"></i> Stok Masuk
+    </a>
+    <a href="{% url 'karyawan_sopir_list' %}"
+       class="sidebar-link {% if 'karyawan_sopir' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-id-card"></i> Sopir
+    </a>
+    <a href="{% url 'karyawan_kendaraan_list' %}"
+       class="sidebar-link {% if 'karyawan_kendaraan' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-truck"></i> Kendaraan
+    </a>
+    <a href="{% url 'karyawan_pelanggan_list' %}"
+       class="sidebar-link {% if 'karyawan_pelanggan' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-users"></i> Pelanggan
+    </a>
+
+    <div class="nav-label mt-2">Transaksi</div>
+    <a href="{% url 'karyawan_pemesanan_list' %}"
+       class="sidebar-link {% if 'karyawan_pemesanan' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-receipt"></i> Pemesanan
+    </a>
+    <a href="{% url 'karyawan_feedback_list' %}"
+       class="sidebar-link {% if 'karyawan_feedback' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-comment-dots"></i> Feedback
+    </a>
+
+    <!-- ── LAPORAN TERPADU ────────────────────────────────────────────────── -->
+    <div class="nav-label mt-2">Laporan Terpadu</div>
+    <a href="#menuLaporan" 
+       data-bs-toggle="collapse" 
+       class="sidebar-link {% if 'laporan' in request.resolver_match.url_name %}active{% endif %}" 
+       aria-expanded="{% if 'laporan' in request.resolver_match.url_name %}true{% else %}false{% endif %}" 
+       aria-controls="menuLaporan">
+        <i class="fas fa-file-invoice"></i> Laporan <i class="fas fa-chevron-down ms-auto small opacity-50"></i>
+    </a>
+    <div class="collapse {% if 'laporan' in request.resolver_match.url_name %}show{% endif %}" id="menuLaporan">
+        <a href="{% url 'laporan-pelanggan' %}" class="sidebar-link ps-4 py-1 {% if request.resolver_match.url_name == 'laporan-pelanggan' %}active{% endif %}">
+            <i class="fas fa-id-card-alt small"></i> Pelanggan
+        </a>
+        <a href="{% url 'laporan-pemesanan-pendapatan' %}" class="sidebar-link ps-4 py-1 {% if request.resolver_match.url_name == 'laporan-pemesanan-pendapatan' %}active{% endif %}">
+            <i class="fas fa-chart-line small"></i> Transaksi & Pendapatan
+        </a>
+        <a href="{% url 'laporan-produk' %}" class="sidebar-link ps-4 py-1 {% if request.resolver_match.url_name == 'laporan-produk' %}active{% endif %}">
+            <i class="fas fa-box-open small"></i> Stok & Produk
+        </a>
+        <a href="{% url 'laporan-sopir-kendaraan' %}" class="sidebar-link ps-4 py-1 {% if request.resolver_match.url_name == 'laporan-sopir-kendaraan' %}active{% endif %}">
+            <i class="fas fa-truck-ramp-box small"></i> Sopir & Armada
+        </a>
+        <a href="{% url 'laporan-feedback' %}" class="sidebar-link ps-4 py-1 {% if request.resolver_match.url_name == 'laporan-feedback' %}active{% endif %}">
+            <i class="fas fa-comments small"></i> Feedback
+        </a>
+    </div>
+</nav>
+
+<div class="sidebar-footer">
+    <div class="user-info">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        Karyawan
+    </div>
+    <form method="post" action="{% url 'karyawan_logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit"
+                class="sidebar-link px-0 w-100 text-start"
+                style="background:none; border:none; cursor:pointer;">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </form>
+</div>

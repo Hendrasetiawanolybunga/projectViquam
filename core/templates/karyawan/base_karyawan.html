@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Portal Karyawan — VIQUAM{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-bg:    #0b1d28;
+            --sidebar-width: 240px;
+            --accent:        #3b9ede;
+            --text-light:    #cdd9e5;
+            --topbar-h:      56px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f0f4f8;
+            margin: 0;
+        }
+
+        /* ── SIDEBAR DESKTOP ─────────────────────────────────────────────── */
+        .sidebar-desktop {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 22px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+
+        .brand-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .brand-sub {
+            font-size: .68rem;
+            color: var(--accent);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+        }
+
+        .nav-label {
+            font-size: .62rem;
+            font-weight: 700;
+            color: rgba(255,255,255,.35);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            padding: 8px 8px 4px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: .82rem;
+            font-weight: 500;
+            transition: background .15s, color .15s;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: rgba(59,158,222,.18);
+            color: #fff;
+        }
+
+        .sidebar-link.active { color: var(--accent); }
+
+        .sidebar-link i { width: 18px; text-align: center; font-size: .85rem; }
+
+        .sidebar-footer {
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255,255,255,.08);
+        }
+
+        .user-info {
+            font-size: .75rem;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .user-info strong { display: block; color: #fff; font-size: .82rem; }
+
+        /* ── MAIN CONTENT ────────────────────────────────────────────────── */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── TOPBAR ──────────────────────────────────────────────────────── */
+        .topbar {
+            height: var(--topbar-h);
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            gap: 12px;
+        }
+
+        /* Hamburger — hanya tampil di mobile */
+        .btn-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #374151;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .topbar-title {
+            font-size: .95rem;
+            font-weight: 600;
+            color: #0b1d28;
+            flex: 1;
+        }
+
+        .topbar-badge {
+            font-size: .72rem;
+            background: #e8f4fd;
+            color: var(--accent);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* ── CONTENT AREA ────────────────────────────────────────────────── */
+        .content-area {
+            flex: 1;
+            padding: 24px;
+        }
+
+        /* ── DATA TABLE CARD ─────────────────────────────────────────────── */
+        .data-table {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .data-table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .data-table-header h6 {
+            margin: 0;
+            font-size: .88rem;
+            font-weight: 700;
+            color: #0b1d28;
+        }
+
+        .table thead th {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 10px 16px;
+            background: #f8fafc;
+        }
+
+        .table tbody td {
+            font-size: .82rem;
+            color: #374151;
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .badge-status {
+            font-size: .7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* ── RESPONSIVE: MOBILE ──────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            /* Sembunyikan sidebar desktop di mobile */
+            .sidebar-desktop { display: none; }
+
+            /* Main wrapper tidak perlu margin kiri */
+            .main-wrapper { margin-left: 0; }
+
+            /* Tampilkan hamburger */
+            .btn-hamburger { display: block; }
+
+            .content-area { padding: 16px; }
+        }
+
+        /* ── PRINT OPTIMIZATION ──────────────────────────────────────────── */
+        @media print {
+            /* Sembunyikan infrastruktur UI */
+            .sidebar-desktop, .topbar, .btn, .card-header form, .dropdown, 
+            form[method="get"], .nav-label, .btn-hamburger {
+                display: none !important;
+            }
+
+            /* Reset layout area utama */
+            .main-wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+
+            .content-area {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .card {
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .card-header {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+
+            /* Optimasi Tabel */
+            table {
+                width: 100% !important;
+                page-break-inside: auto;
+                border: 1px solid #dee2e6 !important;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            .table-responsive {
+                overflow: visible !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR DESKTOP ──────────────────────────────────────────────────── -->
+<aside class="sidebar-desktop">
+    {% include 'karyawan/_sidebar_content.html' %}
+</aside>
+
+<!--
+    SIDEBAR MOBILE — Bootstrap Offcanvas
+    Dipicu oleh tombol hamburger di topbar.
+    Tidak memerlukan JavaScript custom — Bootstrap menangani semuanya.
+-->
+<div class="offcanvas offcanvas-start"
+     tabindex="-1"
+     id="sidebarMobile"
+     aria-labelledby="sidebarMobileLabel"
+     style="width: var(--sidebar-width); background: var(--sidebar-bg);">
+    <div class="offcanvas-header" style="border-bottom: 1px solid rgba(255,255,255,.08);">
+        <span id="sidebarMobileLabel"
+              style="color:#fff; font-weight:700; font-size:.95rem;">
+            <i class="fas fa-water me-2" style="color:var(--accent);"></i>VIQUAM
+        </span>
+        <button type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="offcanvas"
+                aria-label="Tutup menu"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        {% include 'karyawan/_sidebar_content.html' %}
+    </div>
+</div>
+
+<!-- ── MAIN WRAPPER ─────────────────────────────────────────────────────── -->
+<div class="main-wrapper">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <!-- Hamburger (mobile only) -->
+        <button class="btn-hamburger"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#sidebarMobile"
+                aria-controls="sidebarMobile"
+                aria-label="Buka menu navigasi">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+
+        <span class="topbar-badge d-none d-sm-inline">
+            {{ request.user.get_full_name|default:request.user.username }}
+            &nbsp;·&nbsp; Karyawan
+        </span>
+    </header>
+
+    <!-- Content -->
+    <div class="content-area">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

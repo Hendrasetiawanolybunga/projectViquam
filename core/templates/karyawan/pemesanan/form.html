@@ -1,0 +1,160 @@
+{% extends 'karyawan/base_karyawan.html' %}
+{% load humanize %}
+
+{% block title %}{{ form_title }} — Portal Karyawan{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <div class="data-table p-4">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-1">{{ form_title }}</h5>
+                    <p class="text-muted small mb-0">Lengkapi data pemesanan dan detail produk di bawah ini.</p>
+                </div>
+                <a href="{% url 'karyawan_pemesanan_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali
+                </a>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" id="pemesananForm" novalidate>
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <!-- Section 1: Header Pemesanan -->
+                    <div class="col-12">
+                        <div class="bg-light p-3 rounded mb-3">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-file-invoice me-2"></i>Informasi Utama</h6>
+                            <div class="row g-3">
+                                {% for field in form %}
+                                    {% if field.name != 'total' %}
+                                    <div class="col-md-{% if field.name == 'alamatPengiriman' %}12{% else %}4{% endif %}">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label small fw-bold text-secondary mb-1">
+                                                {{ field.label }} {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                            </label>
+                                            {{ field }}
+                                            {% if field.help_text %}
+                                                <div class="form-text extra-small">{{ field.help_text }}</div>
+                                            {% endif %}
+                                            {% if field.errors %}
+                                                {% for error in field.errors %}
+                                                    <div class="invalid-feedback d-block small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Detail Produk (Formset) -->
+                    <div class="col-12">
+                        <div class="p-3 border rounded">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-boxes me-2"></i>Item Pesanan</h6>
+                            
+                            {{ formset.management_form }}
+                            <div id="formset-container">
+                                {% for formset_form in formset %}
+                                <div class="formset-row row g-3 align-items-end mb-3 border-bottom pb-3">
+                                    {% for hidden in formset_form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                    
+                                    <div class="col-md-7">
+                                        <label class="form-label small fw-bold">Pilih Produk</label>
+                                        {{ formset_form.idProduk }}
+                                        {% if formset_form.idProduk.errors %}
+                                            <div class="text-danger small">{{ formset_form.idProduk.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Jumlah</label>
+                                        {{ formset_form.jumlah }}
+                                        {% if formset_form.jumlah.errors %}
+                                            <div class="text-danger small">{{ formset_form.jumlah.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        {% if formset.can_delete %}
+                                            <div class="form-check mb-2">
+                                                <label class="form-check-label small text-danger" for="{{ formset_form.DELETE.id_for_label }}">
+                                                    Hapus? {{ formset_form.DELETE }}
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Template untuk Baris Baru (JS) -->
+                            <div id="empty-form" class="d-none">
+                                <div class="formset-row row g-3 align-items-end mb-3 border-bottom pb-3">
+                                    <div class="col-md-7">
+                                        <label class="form-label small fw-bold">Pilih Produk</label>
+                                        {{ formset.empty_form.idProduk }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Jumlah</label>
+                                        {{ formset.empty_form.jumlah }}
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-form" onclick="this.closest('.formset-row').remove()">
+                                            <i class="fas fa-minus-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="add-form" class="btn btn-sm btn-info text-white mt-2">
+                                <i class="fas fa-plus-circle me-1"></i> Tambah Baris Produk
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="col-12 mt-4">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-sm">
+                                <i class="fas fa-save me-2"></i> {{ submit_label }}
+                            </button>
+                            <a href="{% url 'karyawan_pemesanan_list' %}" class="btn btn-light px-4 py-2 border">
+                                Batal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .extra-small { font-size: 0.7rem; }
+    .bg-light { background-color: #f8fafc !important; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addBtn = document.getElementById('add-form');
+    const container = document.getElementById('formset-container');
+    const totalForms = document.getElementById('id_detailpemesanan_set-TOTAL_FORMS');
+    const emptyForm = document.getElementById('empty-form').innerHTML;
+
+    addBtn.addEventListener('click', function() {
+        const currentCount = parseInt(totalForms.value);
+        const newForm = emptyForm.replace(/__prefix__/g, currentCount);
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newForm;
+        container.appendChild(tempDiv.firstElementChild);
+        
+        totalForms.value = currentCount + 1;
+    });
+});
+</script>
+{% endblock %}

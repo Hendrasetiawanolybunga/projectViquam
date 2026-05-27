@@ -1,0 +1,50 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+{% block title %}{{ form_title }} — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        {% if messages %}{% for msg in messages %}
+        <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3" role="alert" style="border-radius:10px;font-size:.82rem;">
+            {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>{% endfor %}{% endif %}
+
+        <div class="data-table">
+            <div class="data-table-header">
+                <h6><i class="fas fa-users-cog me-2" style="color:#3b9ede;"></i>{{ form_title }}</h6>
+            </div>
+            <div class="p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label" style="font-size:.78rem;font-weight:600;color:#374151;">
+                            {{ field.label }}{% if field.field.required %} <span style="color:#dc2626;">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text" style="font-size:.72rem;color:#94a3b8;">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="invalid-feedback d-block" style="font-size:.75rem;">{% for e in field.errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger" style="font-size:.8rem;border-radius:8px;">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+                    <hr style="border-color:#f1f5f9;margin:20px 0;">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'pimpinan_karyawan_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;padding:7px 18px;">Batal</a>
+                        <button type="submit" class="btn btn-sm" style="background:#0b1d28;color:#fff;border-radius:8px;padding:7px 18px;">
+                            <i class="fas fa-save me-1"></i> {{ submit_label }}
+                        </button>
+                    </div>
+                </form>
+                {% if target_user %}
+                <hr style="border-color:#f1f5f9;margin:20px 0;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="font-size:.78rem;color:#64748b;"><i class="fas fa-key me-1"></i>Ingin mengubah password?</span>
+                    <a href="{% url 'pimpinan_karyawan_password_reset' target_user.pk %}" class="btn btn-sm" style="background:#fef9c3;color:#ca8a04;border:none;border-radius:8px;padding:6px 14px;font-size:.78rem;">Reset Password</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

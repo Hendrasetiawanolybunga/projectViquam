@@ -262,13 +262,13 @@
                     <div class="card-body">
                         <div class="row">
                             {% if user.is_superuser %}
-                            <div class="col-6 mb-3"><a href="{% url 'admin:core_pelanggan_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-users mr-2 text-primary"></i>Pelanggan</a></div>
-                            <div class="col-6 mb-3"><a href="{% url 'admin:core_produk_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-box-open mr-2 text-success"></i>Produk</a></div>
-                            <div class="col-6 mb-3"><a href="{% url 'admin:core_sopir_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-user-tie mr-2 text-info"></i>Sopir</a></div>
-                            <div class="col-6 mb-3"><a href="{% url 'admin:core_feedback_changelist' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-comment-dots mr-2 text-warning"></i>Feedback</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-pelanggan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-users mr-2 text-primary"></i>Pelanggan</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-produk' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-box-open mr-2 text-success"></i>Produk</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-sopir-kendaraan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-user-tie mr-2 text-info"></i>Sopir</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-feedback' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-comment-dots mr-2 text-warning"></i>Feedback</a></div>
                             {% endif %}
-                            <div class="col-6 mb-3"><a href="{% url 'custom_admin:core_pemesanan_laporan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-file-invoice-dollar mr-2 text-danger"></i>Lap. Pendapatan</a></div>
-                            <div class="col-6 mb-3"><a href="{% url 'custom_admin:core_pemesanan_laporan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-chart-line mr-2 text-dark"></i>Lap. Pemesanan</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-pemesanan-pendapatan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-file-invoice-dollar mr-2 text-danger"></i>Lap. Pendapatan</a></div>
+                            <div class="col-6 mb-3"><a href="{% url 'laporan-pemesanan-pendapatan' %}" class="btn btn-light btn-block text-left border"><i class="fas fa-chart-line mr-2 text-dark"></i>Lap. Pemesanan</a></div>
                         </div>
                     </div>
                 </div>

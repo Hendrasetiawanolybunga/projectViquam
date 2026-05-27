@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Karyawan — VIQUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0b1d28 0%, #1a3a4a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+        }
+
+        .brand-logo {
+            width: 52px;
+            height: 52px;
+            background: #0b1d28;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .brand-logo i { color: #3b9ede; font-size: 1.4rem; }
+
+        .login-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0b1d28;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .login-subtitle {
+            font-size: .78rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .form-label {
+            font-size: .78rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            font-size: .88rem;
+            padding: 10px 14px;
+            transition: border-color .2s;
+        }
+
+        .form-control:focus {
+            border-color: #3b9ede;
+            box-shadow: 0 0 0 3px rgba(59,158,222,.12);
+        }
+
+        /* Wrapper untuk input password + toggle icon */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper .form-control {
+            padding-right: 44px; /* ruang untuk ikon */
+        }
+
+        /* Tombol show/hide — tidak menggunakan button agar tidak submit form */
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: .9rem;
+            user-select: none;
+            /* Pastikan tidak bisa di-tab agar tidak mengganggu aksesibilitas form */
+            outline: none;
+        }
+
+        .toggle-password:hover { color: #3b9ede; }
+
+        .btn-login {
+            background: #0b1d28;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 11px;
+            font-size: .9rem;
+            font-weight: 600;
+            width: 100%;
+            transition: background .2s;
+        }
+
+        .btn-login:hover { background: #1a3a4a; color: #fff; }
+
+        .portal-link {
+            font-size: .75rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .portal-link a { color: #3b9ede; text-decoration: none; }
+        .portal-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+
+    <!-- Brand -->
+    <div class="brand-logo">
+        <i class="fas fa-water"></i>
+    </div>
+    <div class="login-title">Portal Karyawan</div>
+    <div class="login-subtitle">VIQUAM — Sistem Manajemen Operasional</div>
+
+    <!-- Alert messages -->
+    {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-danger py-2 px-3 mb-3"
+             style="font-size:.8rem; border-radius:10px;">
+            <i class="fas fa-exclamation-circle me-1"></i>{{ msg }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Login Form -->
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text"
+                   id="id_username"
+                   name="username"
+                   class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                   placeholder="Masukkan username"
+                   value="{{ form.username.value|default:'' }}"
+                   autocomplete="username"
+                   autofocus>
+            {% if form.username.errors %}
+            <div class="invalid-feedback" style="font-size:.75rem;">
+                {{ form.username.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Password dengan Show/Hide -->
+        <div class="mb-4">
+            <label for="id_password" class="form-label">Password</label>
+            <div class="password-wrapper">
+                <input type="password"
+                       id="id_password"
+                       name="password"
+                       class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                       placeholder="Masukkan password"
+                       autocomplete="current-password">
+
+                <!--
+                    Toggle Show/Hide Password — Vanilla JS.
+                    Menggunakan <span> dengan role="button" dan tabindex="-1"
+                    agar tidak masuk tab order form, tapi tetap accessible
+                    via klik mouse.
+                -->
+                <span id="togglePassword"
+                      class="toggle-password"
+                      role="button"
+                      tabindex="-1"
+                      aria-label="Tampilkan atau sembunyikan password">
+                    <i id="toggleIcon" class="fas fa-eye"></i>
+                </span>
+            </div>
+            {% if form.password.errors %}
+            <div class="text-danger mt-1" style="font-size:.75rem;">
+                {{ form.password.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn-login">
+            <i class="fas fa-sign-in-alt me-2"></i>Masuk
+        </button>
+    </form>
+
+    <div class="portal-link">
+        Pimpinan? <a href="{% url 'pimpinan_login' %}">Login di sini</a>
+    </div>
+</div>
+
+<!--
+    VANILLA JS — Show/Hide Password
+    Logika: toggle atribut 'type' antara 'password' dan 'text'.
+    Tidak ada library, tidak ada jQuery.
+-->
+<script>
+(function () {
+    'use strict';
+
+    const toggleBtn  = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('id_password');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (!toggleBtn || !passwordInput || !toggleIcon) return;
+
+    toggleBtn.addEventListener('click', function () {
+        const isHidden = passwordInput.type === 'password';
+
+        // Ubah type input
+        passwordInput.type = isHidden ? 'text' : 'password';
+
+        // Ubah ikon: mata terbuka ↔ mata tertutup
+        toggleIcon.classList.toggle('fa-eye',        !isHidden);
+        toggleIcon.classList.toggle('fa-eye-slash',   isHidden);
+
+        // Update aria-label untuk screen reader
+        toggleBtn.setAttribute(
+            'aria-label',
+            isHidden ? 'Sembunyikan password' : 'Tampilkan password'
+        );
+    });
+}());
+</script>
+
+</body>
+</html>

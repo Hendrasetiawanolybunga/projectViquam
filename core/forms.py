@@ -1,6 +1,7 @@
 from django import forms
 from decimal import Decimal
-from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.forms import SetPasswordForm, UserCreationForm
+from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.validators import RegexValidator
 from .models import Pelanggan, Pemesanan, Sopir
@@ -205,5 +206,130 @@ class ChangePasswordForm(SetPasswordForm):
     new_password2 = forms.CharField(
         label="Konfirmasi password baru",
         widget=forms.PasswordInput(attrs={'class': 'form-control bg-white text-dark border-dark'}),
+        strip=False,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAFF USER MANAGEMENT — digunakan oleh Portal Pimpinan (/pimpinan/users/)
+# ─────────────────────────────────────────────────────────────────────────────
+
+CSS = 'form-control'  # shorthand untuk widget attrs
+
+
+class StaffUserCreateForm(UserCreationForm):
+    """
+    Form untuk membuat akun staff baru oleh Pimpinan.
+
+    Menggunakan UserCreationForm bawaan Django sehingga:
+    - Validasi kekuatan password (AUTH_PASSWORD_VALIDATORS) tetap berjalan.
+    - Password di-hash oleh Django sebelum disimpan — tidak pernah plain-text.
+
+    Field 'is_staff' TIDAK diekspos ke form; nilainya di-set paksa ke True
+    di dalam view (form_valid) agar Pimpinan tidak bisa memanipulasinya.
+    """
+
+    first_name = forms.CharField(
+        label='Nama Depan',
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(attrs={'class': CSS, 'placeholder': 'Nama depan (opsional)'}),
+    )
+    last_name = forms.CharField(
+        label='Nama Belakang',
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={'class': CSS, 'placeholder': 'Nama belakang (opsional)'}),
+    )
+    email = forms.EmailField(
+        label='Email',
+        required=False,
+        widget=forms.EmailInput(attrs={'class': CSS, 'placeholder': 'email@contoh.com'}),
+    )
+
+    class Meta:
+        model = User
+        # Hanya field yang aman untuk diisi oleh Pimpinan.
+        # 'is_staff', 'is_superuser', 'groups', 'user_permissions' sengaja
+        # TIDAK ada di sini — mencegah privilege escalation via form tampering.
+        fields = ('username', 'first_name', 'last_name', 'email',
+                  'password1', 'password2')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': CSS}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Terapkan CSS class ke field password bawaan UserCreationForm
+        self.fields['password1'].widget.attrs.update({'class': CSS})
+        self.fields['password2'].widget.attrs.update({'class': CSS})
+        self.fields['password1'].label = 'Password'
+        self.fields['password2'].label = 'Konfirmasi Password'
+
+
+class StaffUserUpdateForm(forms.ModelForm):
+    """
+    Form untuk memperbarui data akun staff oleh Pimpinan.
+
+    Desain keamanan:
+    - Password TIDAK ada di form ini. Reset password ditangani oleh
+      endpoint terpisah (StaffUserPasswordResetView) menggunakan
+      SetPasswordForm — ini mencegah hash password yang valid
+      tertimpa string kosong secara tidak sengaja.
+    - Field 'is_staff', 'is_superuser', 'groups', 'user_permissions'
+      sengaja dikecualikan untuk mencegah privilege escalation.
+    - Field 'is_active' diekspos agar Pimpinan bisa menonaktifkan
+      akun tanpa harus menghapusnya (soft-disable).
+    """
+
+    first_name = forms.CharField(
+        label='Nama Depan',
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(attrs={'class': CSS}),
+    )
+    last_name = forms.CharField(
+        label='Nama Belakang',
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={'class': CSS}),
+    )
+    email = forms.EmailField(
+        label='Email',
+        required=False,
+        widget=forms.EmailInput(attrs={'class': CSS}),
+    )
+    is_active = forms.BooleanField(
+        label='Akun Aktif',
+        required=False,
+        help_text='Nonaktifkan untuk memblokir login tanpa menghapus akun.',
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'email', 'is_active')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': CSS}),
+        }
+
+
+class StaffUserPasswordResetForm(SetPasswordForm):
+    """
+    Form reset password staff oleh Pimpinan.
+
+    Mewarisi SetPasswordForm Django sehingga:
+    - Validasi AUTH_PASSWORD_VALIDATORS tetap aktif.
+    - Password di-hash oleh Django — tidak pernah disimpan plain-text.
+    """
+
+    new_password1 = forms.CharField(
+        label='Password Baru',
+        widget=forms.PasswordInput(attrs={'class': CSS, 'autocomplete': 'new-password'}),
+        strip=False,
+        help_text='Minimal 8 karakter. Tidak boleh terlalu umum.',
+    )
+    new_password2 = forms.CharField(
+        label='Konfirmasi Password Baru',
+        widget=forms.PasswordInput(attrs={'class': CSS, 'autocomplete': 'new-password'}),
         strip=False,
     )

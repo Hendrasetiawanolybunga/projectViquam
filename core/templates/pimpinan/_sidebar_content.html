@@ -25,6 +25,12 @@
        class="sidebar-link {% if request.resolver_match.url_name == 'pimpinan_sopir' %}active{% endif %}">
         <i class="fas fa-truck"></i> Sopir & Kendaraan
     </a>
+
+    <div class="nav-label mt-2">Manajemen SDM</div>
+    <a href="{% url 'pimpinan_karyawan_list' %}"
+       class="sidebar-link {% if 'pimpinan_karyawan' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-users-cog"></i> Akun Karyawan
+    </a>
 </nav>
 
 <div class="sidebar-footer">

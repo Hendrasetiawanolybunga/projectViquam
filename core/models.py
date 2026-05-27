@@ -148,7 +148,7 @@ class Pemesanan(models.Model):
     ]
     
     idPemesanan = models.AutoField(primary_key=True, verbose_name='ID Pemesanan')
-    idPelanggan = models.ForeignKey(Pelanggan, on_delete=models.PROTECT, verbose_name='Pelanggan') 
+    idPelanggan = models.ForeignKey(Pelanggan, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Pelanggan') 
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Latitude Pengiriman')
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, verbose_name='Longitude Pengiriman')
     tanggalPemesanan = models.DateTimeField(default=timezone.now, verbose_name='Tanggal Pemesanan')

@@ -46,35 +46,42 @@ class CustomAdminSite(admin.AdminSite):
     
     def get_app_list(self, request):
         """
-        Override to customize app list based on user group
+        Override to customize app list based on user role.
+
+        Security rules:
+        - Superuser  : sees everything (default Django behaviour).
+        - Pimpinan   : sees ONLY Feedback in the sidebar.
+                       The 'User' model is explicitly excluded so that
+                       Pimpinan cannot reach Django's built-in user admin
+                       via the sidebar — even though the URL still exists
+                       for superuser use (we do NOT unregister it).
         """
-       
-        if not request.user.is_superuser and request.user.groups.filter(name='Pimpinan').exists():
-          
-            app_list = super().get_app_list(request)
-            
-          
-            allowed_models = ['Feedback']
-            
-          
+        app_list = super().get_app_list(request)
+
+        # Superuser gets the full, unmodified app list.
+        if request.user.is_superuser:
+            return app_list
+
+        # For Pimpinan: whitelist only the Feedback model.
+        if request.user.groups.filter(name='Pimpinan').exists():
+            # Models that Pimpinan is allowed to see in the Django admin sidebar.
+            # 'User' is intentionally absent — Pimpinan manages staff via the
+            # dedicated /pimpinan/users/ portal, not through Django admin.
+            PIMPINAN_ALLOWED_MODELS = {'Feedback'}
+
             filtered_app_list = []
             for app in app_list:
-                filtered_models = []
-                for model in app.get('models', []):
-                   
-                    if model.get('object_name') in allowed_models:
-                       
-                        filtered_models.append(model)
-                
-              
-                if filtered_models:
-                    app['models'] = filtered_models
+                visible_models = [
+                    m for m in app.get('models', [])
+                    if m.get('object_name') in PIMPINAN_ALLOWED_MODELS
+                ]
+                if visible_models:
+                    app['models'] = visible_models
                     filtered_app_list.append(app)
-            
             return filtered_app_list
-        
-      
-        return super().get_app_list(request)
+
+        # Any other authenticated staff user: default behaviour.
+        return app_list
 
 custom_admin_site = CustomAdminSite(name='custom_admin')
 

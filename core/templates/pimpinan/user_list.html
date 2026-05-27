@@ -1,0 +1,158 @@
+{% extends 'pimpinan/base_pimpinan.html' %}
+
+{% block title %}Manajemen Staff — Portal Pimpinan VIQUAM{% endblock %}
+{% block page_title %}Manajemen Akun Staff{% endblock %}
+
+{% block content %}
+
+<!-- TOOLBAR -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+
+    <!-- Search -->
+    <form method="get" action="" class="d-flex gap-2" style="min-width:260px;">
+        <input type="text" name="q" value="{{ q }}"
+               class="form-control form-control-sm"
+               placeholder="Cari username / nama / email…"
+               style="border-radius:8px;">
+        <button type="submit" class="btn btn-sm"
+                style="background:#3b9ede; color:#fff; border-radius:8px; white-space:nowrap;">
+            <i class="fas fa-search"></i>
+        </button>
+        {% if q %}
+        <a href="{% url 'pimpinan_user_list' %}" class="btn btn-sm btn-outline-secondary"
+           style="border-radius:8px;">Reset</a>
+        {% endif %}
+    </form>
+
+    <!-- Tambah -->
+    <a href="{% url 'pimpinan_user_create' %}"
+       class="btn btn-sm"
+       style="background:#0b1d28; color:#fff; border-radius:8px; padding:6px 16px;">
+        <i class="fas fa-plus me-1"></i> Tambah Staff
+    </a>
+</div>
+
+<!-- MESSAGES -->
+{% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert"
+         style="border-radius:10px; font-size:.82rem;">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<!-- TABLE -->
+<div class="data-table">
+    <div class="data-table-header">
+        <h6><i class="fas fa-user-cog me-2" style="color:#3b9ede;"></i>Daftar Akun Staff</h6>
+        <span class="badge" style="background:#e8f4fd; color:#3b9ede; font-size:.72rem;">
+            {{ page_obj.paginator.count }} akun
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Terakhir Login</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in user_list %}
+                <tr>
+                    <td style="font-size:.72rem; color:#94a3b8;">
+                        {{ page_obj.start_index|add:forloop.counter0 }}
+                    </td>
+                    <td style="font-weight:600;">{{ u.username }}</td>
+                    <td>{{ u.get_full_name|default:"—" }}</td>
+                    <td style="font-size:.8rem; color:#64748b;">{{ u.email|default:"—" }}</td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge-status" style="background:#dcfce7; color:#16a34a;">Aktif</span>
+                        {% else %}
+                            <span class="badge-status" style="background:#fee2e2; color:#dc2626;">Nonaktif</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:.78rem; color:#64748b;">
+                        {{ u.last_login|date:"d M Y, H:i"|default:"Belum pernah" }}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <!-- Edit -->
+                            <a href="{% url 'pimpinan_user_update' u.pk %}"
+                               class="btn btn-sm"
+                               title="Edit"
+                               style="background:#e8f4fd; color:#3b9ede; border:none; border-radius:7px; padding:4px 9px;">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <!-- Reset Password -->
+                            <a href="{% url 'pimpinan_user_password_reset' u.pk %}"
+                               class="btn btn-sm"
+                               title="Reset Password"
+                               style="background:#fef9c3; color:#ca8a04; border:none; border-radius:7px; padding:4px 9px;">
+                                <i class="fas fa-key"></i>
+                            </a>
+                            <!-- Hapus -->
+                            <a href="{% url 'pimpinan_user_delete' u.pk %}"
+                               class="btn btn-sm"
+                               title="Hapus"
+                               style="background:#fee2e2; color:#dc2626; border:none; border-radius:7px; padding:4px 9px;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        {% if q %}
+                            Tidak ada akun staff yang cocok dengan "<strong>{{ q }}</strong>".
+                        {% else %}
+                            Belum ada akun staff. <a href="{% url 'pimpinan_user_create' %}">Tambah sekarang</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center py-3">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+                        &laquo;
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+                        &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

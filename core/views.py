@@ -2343,19 +2343,35 @@ def kirim_feedback(request):
 
 
 # =============================================================================
-# PORTAL PIMPINAN — Decorator & Views (READ-ONLY)
+# PORTAL PIMPINAN — Decorator & Views (READ-ONLY + USER MANAGEMENT)
 # =============================================================================
 
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.models import User
 
+# CBV imports untuk User Management
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+
+# Gunakan helper terpusat dari mixins.py
+from .mixins import PimpinanRequiredMixin as _PimpinanMixin, _is_pimpinan, _is_karyawan
+
+from .forms import (
+    StaffUserCreateForm,
+    StaffUserUpdateForm,
+    StaffUserPasswordResetForm,
+)
 
 def pimpinan_required(view_func):
-    """Decorator: user harus authenticated DAN tergabung dalam grup 'Pimpinan'."""
+    """
+    Decorator untuk FBV Pimpinan.
+    Menggunakan _is_pimpinan() dari mixins.py agar logika tidak duplikat.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
-        if not request.user.is_authenticated or \
-           not request.user.groups.filter(name='Pimpinan').exists():
+        if not request.user.is_authenticated or not _is_pimpinan(request.user):
             messages.error(request, 'Akses ditolak. Silakan login sebagai Pimpinan.')
             return redirect('pimpinan_login')
         return view_func(request, *args, **kwargs)
@@ -2363,17 +2379,26 @@ def pimpinan_required(view_func):
 
 
 def pimpinan_login(request):
-    """Login khusus Pimpinan menggunakan Django AuthenticationForm."""
-    if request.user.is_authenticated and \
-       request.user.groups.filter(name='Pimpinan').exists():
+    """
+    Login khusus Pimpinan.
+    Karyawan yang mencoba login di sini akan ditolak dan diarahkan
+    ke portal mereka sendiri.
+    """
+    if request.user.is_authenticated and _is_pimpinan(request.user):
         return redirect('pimpinan_dashboard')
 
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
-            if not user.groups.filter(name='Pimpinan').exists():
-                messages.error(request, 'Akses ditolak, Anda bukan Pimpinan.')
+            # SECURITY: tolak Karyawan yang mencoba masuk portal Pimpinan
+            if _is_karyawan(user):
+                messages.error(
+                    request,
+                    'Akses ditolak. Gunakan portal Karyawan untuk login.'
+                )
+            elif not _is_pimpinan(user):
+                messages.error(request, 'Akses ditolak. Akun ini bukan Pimpinan.')
             else:
                 auth_login(request, user)
                 return redirect('pimpinan_dashboard')
@@ -2508,3 +2533,249 @@ def pimpinan_sopir_list(request):
     """Daftar sopir beserta kendaraan yang ditugaskan."""
     sopir_list = Sopir.objects.prefetch_related('kendaraan_set').order_by('nama')
     return render(request, 'pimpinan/sopir.html', {'sopir_list': sopir_list})
+
+
+# =============================================================================
+# PORTAL PIMPINAN — STAFF USER MANAGEMENT (CBV)
+# =============================================================================
+#
+# Scope data yang diizinkan:
+#   is_staff=True  AND  is_superuser=False
+#
+# Artinya: hanya akun "admin/karyawan" biasa yang bisa dikelola Pimpinan.
+# Superuser dan sesama Pimpinan TIDAK pernah masuk queryset ini.
+# =============================================================================
+
+# Queryset sentinel — dipakai di semua view agar definisi scope ada di satu tempat.
+def _staff_only_qs():
+    """
+    Kembalikan queryset User yang boleh dikelola Pimpinan.
+    Superuser dan anggota grup Pimpinan dikecualikan secara eksplisit.
+    """
+    return (
+        User.objects
+        .filter(is_staff=True, is_superuser=False)
+        # Kecualikan sesama Pimpinan — mereka bukan "staff bawahan"
+        .exclude(groups__name='Pimpinan')
+        .order_by('username')
+    )
+
+
+class PimpinanRequiredMixin(LoginRequiredMixin):
+    """
+    Alias lokal — delegasi ke _PimpinanMixin dari mixins.py.
+    Dipertahankan agar CBV yang sudah ada tidak perlu diubah nama mixin-nya.
+    """
+    login_url = 'pimpinan_login'
+
+    def dispatch(self, request, *args, **kwargs):
+        return _PimpinanMixin.dispatch(self, request, *args, **kwargs)
+
+
+class StaffUserListView(PimpinanRequiredMixin, ListView):
+    """
+    Tampilkan daftar akun staff yang bisa dikelola Pimpinan.
+    Queryset dibatasi oleh _staff_only_qs() — superuser tidak pernah muncul.
+    """
+
+    model = User
+    template_name = 'pimpinan/user_list.html'
+    context_object_name = 'user_list'
+    paginate_by = 20  # Hindari dump seluruh tabel ke satu halaman
+
+    def get_queryset(self):
+        # SECURITY: selalu gunakan _staff_only_qs() — jangan User.objects.all()
+        qs = _staff_only_qs()
+
+        # Filter pencarian opsional via GET param ?q=
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(username__icontains=q) |
+                Q(first_name__icontains=q) |
+                Q(last_name__icontains=q) |
+                Q(email__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['q'] = self.request.GET.get('q', '')
+        return ctx
+
+
+class StaffUserCreateView(PimpinanRequiredMixin, CreateView):
+    """
+    Buat akun staff baru.
+
+    Keamanan krusial di form_valid():
+    - is_staff  di-set True  secara paksa → user langsung bisa login ke /admin/
+    - is_superuser di-set False secara paksa → tidak bisa jadi superuser
+    - commit=False dipakai agar kita bisa set flag sebelum INSERT ke DB
+    """
+
+    model = User
+    form_class = StaffUserCreateForm
+    template_name = 'pimpinan/user_form.html'
+    success_url = reverse_lazy('pimpinan_user_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['form_title'] = 'Tambah Akun Staff'
+        ctx['submit_label'] = 'Simpan Akun'
+        return ctx
+
+    def form_valid(self, form):
+        # commit=False: objek User dibuat di memori, belum di-INSERT ke DB
+        user = form.save(commit=False)
+
+        # SECURITY: paksa flag ini terlepas dari apa pun yang ada di POST body.
+        # Ini mencegah privilege escalation meski form di-tamper via browser devtools.
+        user.is_staff = True        # Wajib: agar bisa login ke /admin/
+        user.is_superuser = False   # Wajib: tidak boleh jadi superuser
+
+        # Simpan ke DB — password sudah di-hash oleh UserCreationForm.save()
+        user.save()
+
+        messages.success(
+            self.request,
+            f'Akun staff "{user.username}" berhasil dibuat.'
+        )
+        return redirect(self.success_url)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Terdapat kesalahan pada form. Periksa kembali.')
+        return super().form_invalid(form)
+
+
+class StaffUserUpdateView(PimpinanRequiredMixin, UpdateView):
+    """
+    Perbarui data akun staff (username, nama, email, is_active).
+    Password TIDAK ada di form ini — gunakan StaffUserPasswordResetView.
+
+    SECURITY — ID Hijacking Prevention:
+    get_queryset() di-override agar URL /pimpinan/users/<id>/edit/ hanya
+    bisa diakses jika <id> ada dalam _staff_only_qs().
+    Jika Pimpinan mengetik ID superuser secara manual → 404, bukan 403,
+    agar tidak membocorkan keberadaan akun tersebut.
+    """
+
+    model = User
+    form_class = StaffUserUpdateForm
+    template_name = 'pimpinan/user_form.html'
+    success_url = reverse_lazy('pimpinan_user_list')
+
+    def get_queryset(self):
+        # SECURITY: batasi queryset — superuser tidak bisa di-edit via URL ini
+        return _staff_only_qs()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['form_title'] = f'Edit Akun: {self.object.username}'
+        ctx['submit_label'] = 'Simpan Perubahan'
+        # Kirim objek user ke template untuk tombol "Reset Password"
+        ctx['target_user'] = self.object
+        return ctx
+
+    def form_valid(self, form):
+        # SECURITY: pastikan flag kritis tidak bisa diubah via form ini
+        # meski ada manipulasi POST body
+        user = form.save(commit=False)
+        user.is_staff = True        # Tidak boleh di-downgrade
+        user.is_superuser = False   # Tidak boleh di-upgrade
+        user.save()
+
+        messages.success(
+            self.request,
+            f'Data akun "{user.username}" berhasil diperbarui.'
+        )
+        return redirect(self.success_url)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Terdapat kesalahan pada form. Periksa kembali.')
+        return super().form_invalid(form)
+
+
+class StaffUserDeleteView(PimpinanRequiredMixin, DeleteView):
+    """
+    Hapus akun staff.
+
+    SECURITY — ID Hijacking Prevention:
+    Sama seperti UpdateView, get_queryset() dibatasi ke _staff_only_qs().
+    Superuser tidak bisa dihapus via URL ini.
+
+    Catatan UX: pertimbangkan menggunakan is_active=False (soft-delete)
+    daripada hard-delete untuk menjaga integritas data historis.
+    """
+
+    model = User
+    template_name = 'pimpinan/user_confirm_delete.html'
+    success_url = reverse_lazy('pimpinan_user_list')
+
+    def get_queryset(self):
+        # SECURITY: batasi queryset — superuser tidak bisa dihapus via URL ini
+        return _staff_only_qs()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['target_user'] = self.object
+        return ctx
+
+    def form_valid(self, form):
+        username = self.object.username
+        response = super().form_valid(form)
+        messages.success(self.request, f'Akun "{username}" berhasil dihapus.')
+        return response
+
+
+class StaffUserPasswordResetView(PimpinanRequiredMixin, UpdateView):
+    """
+    Reset password akun staff oleh Pimpinan.
+
+    Menggunakan SetPasswordForm (via StaffUserPasswordResetForm) sehingga:
+    - Validasi AUTH_PASSWORD_VALIDATORS tetap aktif.
+    - Password di-hash oleh Django — tidak pernah disimpan plain-text.
+    - Hash password yang ada tidak pernah tertimpa string kosong.
+
+    SECURITY — ID Hijacking Prevention:
+    get_queryset() dibatasi ke _staff_only_qs().
+    """
+
+    model = User
+    template_name = 'pimpinan/user_password_reset.html'
+    success_url = reverse_lazy('pimpinan_user_list')
+
+    def get_queryset(self):
+        # SECURITY: batasi queryset — superuser tidak bisa di-reset via URL ini
+        return _staff_only_qs()
+
+    def get_form(self, form_class=None):
+        """
+        UpdateView secara default menggunakan ModelForm.
+        Override ini mengganti form dengan StaffUserPasswordResetForm
+        yang mewarisi SetPasswordForm dan menerima 'user' sebagai argumen pertama.
+        """
+        kwargs = self.get_form_kwargs()
+        # SetPasswordForm mengharapkan positional arg 'user', bukan 'instance'
+        kwargs.pop('instance', None)
+        return StaffUserPasswordResetForm(user=self.object, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['form_title'] = f'Reset Password: {self.object.username}'
+        ctx['submit_label'] = 'Simpan Password Baru'
+        ctx['target_user'] = self.object
+        return ctx
+
+    def form_valid(self, form):
+        # SetPasswordForm.save() menangani hashing — kita cukup panggil save()
+        form.save()
+        messages.success(
+            self.request,
+            f'Password akun "{self.object.username}" berhasil direset.'
+        )
+        return redirect(self.success_url)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Password tidak valid. Periksa kembali.')
+        return super().form_invalid(form)
